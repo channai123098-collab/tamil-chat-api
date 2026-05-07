@@ -39881,13 +39881,13 @@ var require_axios = __commonJS({
       }
       return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url2);
     }
-    function combineURLs(baseURL, relativeURL) {
-      return relativeURL ? baseURL.replace(/\/?\/$/, "") + "/" + relativeURL.replace(/^\/+/, "") : baseURL;
+    function combineURLs(baseURL2, relativeURL) {
+      return relativeURL ? baseURL2.replace(/\/?\/$/, "") + "/" + relativeURL.replace(/^\/+/, "") : baseURL2;
     }
-    function buildFullPath(baseURL, requestedURL, allowAbsoluteUrls) {
+    function buildFullPath(baseURL2, requestedURL, allowAbsoluteUrls) {
       let isRelativeUrl = !isAbsoluteURL2(requestedURL);
-      if (baseURL && (isRelativeUrl || allowAbsoluteUrls === false)) {
-        return combineURLs(baseURL, requestedURL);
+      if (baseURL2 && (isRelativeUrl || allowAbsoluteUrls === false)) {
+        return combineURLs(baseURL2, requestedURL);
       }
       return requestedURL;
     }
@@ -41447,11 +41447,11 @@ var require_axios = __commonJS({
       const xsrfCookieName = own2("xsrfCookieName");
       let headers = own2("headers");
       const auth = own2("auth");
-      const baseURL = own2("baseURL");
+      const baseURL2 = own2("baseURL");
       const allowAbsoluteUrls = own2("allowAbsoluteUrls");
       const url2 = own2("url");
       newConfig.headers = headers = AxiosHeaders.from(headers);
-      newConfig.url = buildURL(buildFullPath(baseURL, url2, allowAbsoluteUrls), config.params, config.paramsSerializer);
+      newConfig.url = buildURL(buildFullPath(baseURL2, url2, allowAbsoluteUrls), config.params, config.paramsSerializer);
       if (auth) {
         headers.set("Authorization", "Basic " + btoa((auth.username || "") + ":" + (auth.password ? encodeUTF82(auth.password) : "")));
       }
@@ -59233,7 +59233,7 @@ var OpenAI = class {
    * @param {Record<string, string | undefined>} opts.defaultQuery - Default query parameters to include with every request to the API.
    * @param {boolean} [opts.dangerouslyAllowBrowser=false] - By default, client-side use of this library is not allowed, as it risks exposing your secret API credentials to attackers.
    */
-  constructor({ baseURL = readEnv("OPENAI_BASE_URL"), apiKey: apiKey3 = readEnv("OPENAI_API_KEY"), organization = readEnv("OPENAI_ORG_ID") ?? null, project = readEnv("OPENAI_PROJECT_ID") ?? null, webhookSecret = readEnv("OPENAI_WEBHOOK_SECRET") ?? null, workloadIdentity, ...opts } = {}) {
+  constructor({ baseURL: baseURL2 = readEnv("OPENAI_BASE_URL"), apiKey: apiKey4 = readEnv("OPENAI_API_KEY"), organization = readEnv("OPENAI_ORG_ID") ?? null, project = readEnv("OPENAI_PROJECT_ID") ?? null, webhookSecret = readEnv("OPENAI_WEBHOOK_SECRET") ?? null, workloadIdentity, ...opts } = {}) {
     _OpenAI_instances.add(this);
     _OpenAI_encoder.set(this, void 0);
     this.completions = new Completions2(this);
@@ -59259,21 +59259,21 @@ var OpenAI = class {
     this.skills = new Skills(this);
     this.videos = new Videos(this);
     if (workloadIdentity) {
-      if (apiKey3 && apiKey3 !== WORKLOAD_IDENTITY_API_KEY_PLACEHOLDER) {
+      if (apiKey4 && apiKey4 !== WORKLOAD_IDENTITY_API_KEY_PLACEHOLDER) {
         throw new OpenAIError("The `apiKey` and `workloadIdentity` arguments are mutually exclusive; only one can be passed at a time.");
       }
-      apiKey3 = WORKLOAD_IDENTITY_API_KEY_PLACEHOLDER;
-    } else if (apiKey3 === void 0) {
+      apiKey4 = WORKLOAD_IDENTITY_API_KEY_PLACEHOLDER;
+    } else if (apiKey4 === void 0) {
       throw new OpenAIError("Missing credentials. Please pass an `apiKey`, `workloadIdentity`, or set the `OPENAI_API_KEY` environment variable.");
     }
     const options = {
-      apiKey: apiKey3,
+      apiKey: apiKey4,
       organization,
       project,
       webhookSecret,
       workloadIdentity,
       ...opts,
-      baseURL: baseURL || `https://api.openai.com/v1`
+      baseURL: baseURL2 || `https://api.openai.com/v1`
     };
     if (!options.dangerouslyAllowBrowser && isRunningInBrowser()) {
       throw new OpenAIError("It looks like you're running in a browser-like environment.\n\nThis is disabled by default, as it risks exposing your secret API credentials to attackers.\nIf you understand the risks and have appropriate mitigations in place,\nyou can set the `dangerouslyAllowBrowser` option to `true`, e.g.,\n\nnew OpenAI({ apiKey, dangerouslyAllowBrowser: true });\n\nhttps://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety\n");
@@ -59292,7 +59292,7 @@ var OpenAI = class {
     if (workloadIdentity) {
       this._workloadIdentityAuth = new WorkloadIdentityAuth(workloadIdentity, this.fetch);
     }
-    this.apiKey = typeof apiKey3 === "string" ? apiKey3 : "Missing Key";
+    this.apiKey = typeof apiKey4 === "string" ? apiKey4 : "Missing Key";
     this.organization = organization;
     this.project = project;
     this.webhookSecret = webhookSecret;
@@ -59341,12 +59341,12 @@ var OpenAI = class {
     return APIError.generate(status, error, message, headers);
   }
   async _callApiKey() {
-    const apiKey3 = this._options.apiKey;
-    if (typeof apiKey3 !== "function")
+    const apiKey4 = this._options.apiKey;
+    if (typeof apiKey4 !== "function")
       return false;
     let token;
     try {
-      token = await apiKey3();
+      token = await apiKey4();
     } catch (err) {
       if (err instanceof OpenAIError)
         throw err;
@@ -59363,8 +59363,8 @@ var OpenAI = class {
     return true;
   }
   buildURL(path2, query, defaultBaseURL) {
-    const baseURL = !__classPrivateFieldGet(this, _OpenAI_instances, "m", _OpenAI_baseURLOverridden).call(this) && defaultBaseURL || this.baseURL;
-    const url = isAbsoluteURL(path2) ? new URL(path2) : new URL(baseURL + (baseURL.endsWith("/") && path2.startsWith("/") ? path2.slice(1) : path2));
+    const baseURL2 = !__classPrivateFieldGet(this, _OpenAI_instances, "m", _OpenAI_baseURLOverridden).call(this) && defaultBaseURL || this.baseURL;
+    const url = isAbsoluteURL(path2) ? new URL(path2) : new URL(baseURL2 + (baseURL2.endsWith("/") && path2.startsWith("/") ? path2.slice(1) : path2));
     const defaultQuery = this.defaultQuery();
     const pathQuery = Object.fromEntries(url.searchParams);
     if (!isEmptyObj(defaultQuery) || !isEmptyObj(pathQuery)) {
@@ -59747,19 +59747,11 @@ OpenAI.Skills = Skills;
 OpenAI.Videos = Videos;
 
 // ../../lib/integrations-openai-ai-server/src/image/client.ts
-if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
-  throw new Error(
-    "AI_INTEGRATIONS_OPENAI_BASE_URL must be set. Did you forget to provision the OpenAI AI integration?"
-  );
-}
-if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-  throw new Error(
-    "AI_INTEGRATIONS_OPENAI_API_KEY must be set. Did you forget to provision the OpenAI AI integration?"
-  );
-}
+var apiKey3 = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+var baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || void 0;
 var openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL
+  apiKey: apiKey3 ?? "not-configured",
+  ...baseURL ? { baseURL } : {}
 });
 
 // src/routes/image.ts
@@ -60252,8 +60244,8 @@ function buildEnrichedPrompt(prompt, isCouple, isNsfw = false, wantsNudityFlag =
   return `${subjectCount}, full body shot, head to toe, ${cleanPrompt}, ${poseVariant}, ${expressionVariant}, ${lightingVariant}, ${angleVariant}, ${styleStack}`;
 }
 async function generateWithTensorArt(prompt, isCouple = false, negativePrompt = "", isNsfw = false) {
-  const apiKey3 = process.env.TENSORART_API_KEY;
-  if (!apiKey3) throw new Error("TensorArt API key \u0B87\u0BB2\u0BCD\u0BB2 \u2014 TENSORART_API_KEY set \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1");
+  const apiKey4 = process.env.TENSORART_API_KEY;
+  if (!apiKey4) throw new Error("TensorArt API key \u0B87\u0BB2\u0BCD\u0BB2 \u2014 TENSORART_API_KEY set \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1");
   const enrichedPrompt = buildEnrichedPrompt(prompt, isCouple, isNsfw);
   const negPrompt = negativePrompt || [
     "ugly, deformed, blurry, bad anatomy, extra limbs, disfigured",
@@ -60315,7 +60307,7 @@ async function generateWithTensorArt(prompt, isCouple = false, negativePrompt = 
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey3}`
+      "Authorization": `Bearer ${apiKey4}`
     },
     body: JSON.stringify(jobBody),
     signal: AbortSignal.timeout(3e4)
@@ -60333,7 +60325,7 @@ async function generateWithTensorArt(prompt, isCouple = false, negativePrompt = 
   for (let attempt = 0; attempt < 30; attempt++) {
     await new Promise((r) => setTimeout(r, 3e3));
     const pollResp = await fetch(`${TENSORART_BASE}/jobs/${jobId}`, {
-      headers: { "Authorization": `Bearer ${apiKey3}` },
+      headers: { "Authorization": `Bearer ${apiKey4}` },
       signal: AbortSignal.timeout(1e4)
     });
     if (!pollResp.ok) continue;
@@ -60359,7 +60351,7 @@ async function generateWithTensorArt(prompt, isCouple = false, negativePrompt = 
   throw new Error("TensorArt timeout \u2014 90 sec-\u0BB2\u0BCD image \u0BB5\u0BB0\u0BB2");
 }
 async function generateWithStableHorde(prompt, isCouple = false, negativePrompt = "", clientKey, isNsfw = false, referenceImageBase64) {
-  const apiKey3 = clientKey || process.env.STABLEHORDE_API_KEY || "0000000000";
+  const apiKey4 = clientKey || process.env.STABLEHORDE_API_KEY || "0000000000";
   const enrichedPrompt = buildEnrichedPrompt(prompt, isCouple, isNsfw);
   const negPrompt = negativePrompt || `ugly, blurry, watermark, text, logo, cropped, ${qualityNegativeFor(isCouple)}`;
   const seed = Math.floor(Math.random() * 2147483647);
@@ -60371,7 +60363,7 @@ async function generateWithStableHorde(prompt, isCouple = false, negativePrompt 
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      apikey: apiKey3,
+      apikey: apiKey4,
       "Client-Agent": "TamilChat:1.0:replit"
     },
     body: JSON.stringify({
@@ -60444,8 +60436,8 @@ async function generateWithStableHorde(prompt, isCouple = false, negativePrompt 
 var PRODIA_BASE = "https://api.prodia.com/v1";
 var PRODIA_DEFAULT_MODEL = process.env.PRODIA_MODEL ?? "absolutereality_v181.safetensors [3d9d4d2b]";
 async function generateWithProdia(prompt, isCouple = false, negativePrompt = "", clientKey, isNsfw = false, modelOverride) {
-  const apiKey3 = clientKey || process.env.PRODIA_API_KEY;
-  if (!apiKey3) throw new Error("Prodia API key \u0B87\u0BB2\u0BCD\u0BB2 \u2014 Settings \u2192 API Keys-\u0BB2\u0BCD key add \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.");
+  const apiKey4 = clientKey || process.env.PRODIA_API_KEY;
+  if (!apiKey4) throw new Error("Prodia API key \u0B87\u0BB2\u0BCD\u0BB2 \u2014 Settings \u2192 API Keys-\u0BB2\u0BCD key add \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.");
   const enrichedPrompt = buildEnrichedPrompt(prompt, isCouple, isNsfw);
   const negPrompt = negativePrompt || `ugly, blurry, watermark, text, logo, cropped, ${qualityNegativeFor(isCouple)}`;
   const seed = Math.floor(Math.random() * 2147483647);
@@ -60453,7 +60445,7 @@ async function generateWithProdia(prompt, isCouple = false, negativePrompt = "",
   const createResp = await fetch(`${PRODIA_BASE}/sd/generate`, {
     method: "POST",
     headers: {
-      "X-Prodia-Key": apiKey3,
+      "X-Prodia-Key": apiKey4,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -60484,7 +60476,7 @@ async function generateWithProdia(prompt, isCouple = false, negativePrompt = "",
   for (let i = 0; i < 60; i++) {
     await new Promise((r) => setTimeout(r, 2500));
     const pollResp = await fetch(`${PRODIA_BASE}/job/${jobId}`, {
-      headers: { "X-Prodia-Key": apiKey3 },
+      headers: { "X-Prodia-Key": apiKey4 },
       signal: AbortSignal.timeout(1e4)
     });
     if (!pollResp.ok) continue;
@@ -60504,8 +60496,8 @@ async function generateWithProdia(prompt, isCouple = false, negativePrompt = "",
 var SEAART_BASE = "https://www.seaart.ai/api/v1";
 var SEAART_DEFAULT_MODEL = process.env.SEAART_MODEL ?? "tamarin_xl_v1";
 async function generateWithSeaArt(prompt, isCouple = false, negativePrompt = "", clientKey, isNsfw = false, modelOverride) {
-  const apiKey3 = clientKey || process.env.SEAART_API_KEY;
-  if (!apiKey3) throw new Error("SeaArt API key \u0B87\u0BB2\u0BCD\u0BB2 \u2014 Settings \u2192 API Keys-\u0BB2\u0BCD key add \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.");
+  const apiKey4 = clientKey || process.env.SEAART_API_KEY;
+  if (!apiKey4) throw new Error("SeaArt API key \u0B87\u0BB2\u0BCD\u0BB2 \u2014 Settings \u2192 API Keys-\u0BB2\u0BCD key add \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.");
   const enrichedPrompt = buildEnrichedPrompt(prompt, isCouple, isNsfw);
   const negPrompt = negativePrompt || `ugly, blurry, watermark, text, logo, cropped, ${qualityNegativeFor(isCouple)}`;
   const seed = Math.floor(Math.random() * 2147483647);
@@ -60513,7 +60505,7 @@ async function generateWithSeaArt(prompt, isCouple = false, negativePrompt = "",
   const createResp = await fetch(`${SEAART_BASE}/task/create`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey3}`,
+      Authorization: `Bearer ${apiKey4}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -60547,7 +60539,7 @@ async function generateWithSeaArt(prompt, isCouple = false, negativePrompt = "",
   for (let i = 0; i < 60; i++) {
     await new Promise((r) => setTimeout(r, 3e3));
     const pollResp = await fetch(`${SEAART_BASE}/task/info?task_id=${jobId}`, {
-      headers: { Authorization: `Bearer ${apiKey3}` },
+      headers: { Authorization: `Bearer ${apiKey4}` },
       signal: AbortSignal.timeout(1e4)
     });
     if (!pollResp.ok) continue;
@@ -60571,8 +60563,8 @@ async function generateWithSeaArt(prompt, isCouple = false, negativePrompt = "",
 var HF_FLUX_MODEL = process.env.HF_FLUX_MODEL ?? "black-forest-labs/FLUX.1-schnell";
 var HF_NSFW_MODEL = process.env.HF_NSFW_MODEL ?? "digiplay/AbsoluteReality_v1.8.1";
 async function generateWithHuggingFace(prompt, isCouple = false, negativePrompt = "", clientKey, isNsfw = false, modelOverride) {
-  const apiKey3 = clientKey || process.env.HUGGINGFACE_API_KEY;
-  if (!apiKey3) throw new Error("HuggingFace API key \u0B87\u0BB2\u0BCD\u0BB2 \u2014 Settings \u2192 API Keys-\u0BB2\u0BCD key add \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.");
+  const apiKey4 = clientKey || process.env.HUGGINGFACE_API_KEY;
+  if (!apiKey4) throw new Error("HuggingFace API key \u0B87\u0BB2\u0BCD\u0BB2 \u2014 Settings \u2192 API Keys-\u0BB2\u0BCD key add \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.");
   const enrichedPrompt = buildEnrichedPrompt(prompt, isCouple, isNsfw);
   const negPrompt = negativePrompt || `ugly, blurry, watermark, text, logo, cropped, ${qualityNegativeFor(isCouple)}`;
   const seed = Math.floor(Math.random() * 2147483647);
@@ -60581,7 +60573,7 @@ async function generateWithHuggingFace(prompt, isCouple = false, negativePrompt 
   const resp = await fetch(`https://router.huggingface.co/hf-inference/models/${hfModel}`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey3}`,
+      Authorization: `Bearer ${apiKey4}`,
       "Content-Type": "application/json",
       Accept: "image/png"
     },
@@ -60626,7 +60618,7 @@ async function generateWithHuggingFace(prompt, isCouple = false, negativePrompt 
 }
 async function editWithOpenAI(prompt, referenceBuffers) {
   const baseUrl3 = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
-  const apiKey3 = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  const apiKey4 = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
   const form = new FormData();
   form.append("model", "gpt-image-1");
   form.append("prompt", prompt);
@@ -60641,7 +60633,7 @@ async function editWithOpenAI(prompt, referenceBuffers) {
   }
   const rawResp = await fetch(`${baseUrl3}/images/edits`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey3}` },
+    headers: { Authorization: `Bearer ${apiKey4}` },
     body: form
   });
   if (!rawResp.ok) {
