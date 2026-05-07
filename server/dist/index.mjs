@@ -52458,7 +52458,7 @@ router2.post("/chat/stream", async (req, res) => {
   const systemPrompt = typeof body.systemPrompt === "string" ? body.systemPrompt : "";
   const chatMode = body.mode === "support" ? "support" : "chat";
   const chatProvider = body.chatProvider === "groq" ? "groq" : "gemini";
-  const groqApiKey = typeof body.groqApiKey === "string" ? body.groqApiKey.trim() : "";
+  const groqApiKey = (typeof body.groqApiKey === "string" ? body.groqApiKey.trim() : "") || (process.env.GROQ_API_KEY ?? "");
   if (messages.length === 0) {
     res.status(400).json({ error: "messages array is required" });
     return;
