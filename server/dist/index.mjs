@@ -61480,8 +61480,8 @@ setInterval(() => {
     if (job.createdAt < cutoff) faceSwapJobs.delete(id);
   }
 }, 5 * 60 * 1e3);
-async function performFaceSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType) {
-  const hfToken = process.env.HF_TOKEN;
+async function performFaceSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType, passedToken) {
+  const hfToken = passedToken || process.env.HF_TOKEN;
   const spaceUrl = "https://tonyassi-face-swap.hf.space";
   const headers = { "Content-Type": "application/json" };
   if (hfToken) headers["Authorization"] = `Bearer ${hfToken}`;
@@ -61570,7 +61570,8 @@ router3.post("/image/face-swap/start", (req, res) => {
     body.sourceBase64,
     body.sourceMimeType || "image/jpeg",
     body.targetBase64,
-    body.targetMimeType || "image/jpeg"
+    body.targetMimeType || "image/jpeg",
+    body.hfToken
   ).then((result) => {
     faceSwapJobs.set(jobId, { status: "done", result, createdAt: Date.now() });
   }).catch((err) => {
