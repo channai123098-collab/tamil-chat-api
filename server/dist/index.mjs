@@ -60682,7 +60682,7 @@ Hair (color, length, texture, style), face shape, forehead (size), eyes (size, s
 Example: long wavy dark brown hair side-parted, heart-shaped face, medium forehead, large round hazel eyes with long lashes, small button nose, round full cheeks with dimples, soft rounded jaw with small chin, small ears, thick curved dark eyebrows, full heart-shaped pink lips, warm olive skin, appears 22 years old
 
 Describe this person now. ONLY face and hair descriptors, no labels, no explanation. DO NOT mention body type, clothing, build, or figure.`;
-var FACE_MODELS = ["gemini-2.0-flash"];
+var FACE_MODELS = ["gemini-1.5-flash"];
 async function geminiAnalyzeFace(imageBase64, imageMimeType) {
   const safetySettings = [
     { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -60820,7 +60820,7 @@ async function geminiAnalyzePoseAttire(imageBase64, imageMimeType) {
   ];
   try {
     const resp = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       contents: [{
         role: "user",
         parts: [
@@ -60898,7 +60898,7 @@ Output a detailed English image prompt (30-50 words) covering:
 IMPORTANT: Match the actual scene from conversation. Normal chat \u2192 natural pose with clothes. Romantic scene \u2192 romantic pose. Explicit scene \u2192 match that. 
 Output ONLY the image prompt. No explanation. No names. No Tamil. English only.`;
   const resp = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-flash",
     contents: [
       {
         role: "user",
@@ -61358,7 +61358,7 @@ async function geminiAnalyzeBody(imageBase64, imageMimeType) {
     { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
   ];
   const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-flash",
     contents: [{
       role: "user",
       parts: [
