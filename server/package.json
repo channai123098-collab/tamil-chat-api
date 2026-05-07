@@ -1,0 +1,11 @@
+{
+  "name": "tamil-chat-api-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node --enable-source-maps ./dist/index.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^1.44.0"
+  }
+}
