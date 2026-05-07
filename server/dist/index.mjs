@@ -61034,10 +61034,10 @@ var NSFW_PROVIDER_ORDER = ["tensorart", "stufferai", "pollinations", "stablehord
 async function generateWithNsfwFallback(primaryProvider, finalPrompt, isCouple, negativePrompt, log, clientKeys, isNsfw = false, wantsNudity = false, referenceImageBase64) {
   const primary = primaryProvider;
   const tensorartReady = !!process.env.TENSORART_API_KEY;
-  const effectivePrimary = isNsfw && primary === "pollinations" ? tensorartReady ? "tensorart" : "stablehorde" : primary;
+  const effectivePrimary = isNsfw && primary === "pollinations" && tensorartReady ? "tensorart" : primary;
   const fallbackOrder = [
     effectivePrimary,
-    ...NSFW_PROVIDER_ORDER.filter((p) => p !== effectivePrimary && !(isNsfw && p === "pollinations"))
+    ...NSFW_PROVIDER_ORDER.filter((p) => p !== effectivePrimary)
   ];
   let lastError = new Error("All providers failed");
   const providerFailures = [];
