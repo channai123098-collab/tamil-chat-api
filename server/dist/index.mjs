@@ -52457,6 +52457,8 @@ router2.post("/chat/stream", async (req, res) => {
   const messages = Array.isArray(body.messages) ? body.messages : [];
   const systemPrompt = typeof body.systemPrompt === "string" ? body.systemPrompt : "";
   const chatMode = body.mode === "support" ? "support" : "chat";
+  const chatProvider = body.chatProvider === "groq" ? "groq" : "gemini";
+  const groqApiKey = typeof body.groqApiKey === "string" ? body.groqApiKey.trim() : "";
   if (messages.length === 0) {
     res.status(400).json({ error: "messages array is required" });
     return;
@@ -52466,6 +52468,94 @@ router2.post("/chat/stream", async (req, res) => {
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders?.();
+  if (chatProvider === "groq" && groqApiKey) {
+    try {
+      const groqMessages = [];
+      if (systemPrompt) {
+        groqMessages.push({ role: "system", content: systemPrompt });
+      }
+      for (const m of messages) {
+        groqMessages.push({ role: m.role === "assistant" ? "assistant" : "user", content: m.content ?? "" });
+      }
+      const groqResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${groqApiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: groqMessages,
+          stream: true,
+          max_tokens: 2048,
+          temperature: 0.95,
+          top_p: 0.95
+        })
+      });
+      if (!groqResp.ok) {
+        const errText = await groqResp.text();
+        const errLower = errText.toLowerCase();
+        let userMsg = errText;
+        if (groqResp.status === 401 || groqResp.status === 403) {
+          userMsg = "\u{1F511} Groq API Key invalid \u2014 Settings-\u0BB2\u0BCD correct key enter \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.";
+        } else if (groqResp.status === 429) {
+          userMsg = "\u26A1 Groq Rate limit \u2014 \u0B9A\u0BB1\u0BCD\u0BB1\u0BC1 \u0BA8\u0BC7\u0BB0\u0BAE\u0BCD \u0B95\u0BB4\u0BBF\u0B9A\u0BCD\u0B9A\u0BC1 try \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.";
+        } else if (errLower.includes("content") || errLower.includes("filter")) {
+          userMsg = "\u{1F6AB} Groq content filter block \u0BAA\u0BA3\u0BCD\u0BA3\u0BBF\u0BB0\u0BC1\u0B9A\u0BCD\u0B9A\u0BC1 \u2014 Gemini-\u0B95\u0BCD\u0B95\u0BC1 switch \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.";
+        }
+        res.write(`data: ${JSON.stringify({ error: userMsg, errorCode: "GROQ_ERROR" })}
+
+`);
+        res.end();
+        return;
+      }
+      const reader = groqResp.body?.getReader();
+      if (!reader) {
+        res.write(`data: ${JSON.stringify({ error: "Groq stream unavailable", errorCode: "GROQ_ERROR" })}
+
+`);
+        res.end();
+        return;
+      }
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const payload = trimmed.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(payload);
+            const text = parsed?.choices?.[0]?.delta?.content;
+            if (text) {
+              res.write(`data: ${JSON.stringify({ content: text })}
+
+`);
+            }
+          } catch {
+          }
+        }
+      }
+      res.write(`data: ${JSON.stringify({ done: true })}
+
+`);
+      res.end();
+    } catch (err) {
+      logger.error({ err }, "Groq stream error");
+      const raw = err instanceof Error ? err.message : "Unknown error";
+      res.write(`data: ${JSON.stringify({ error: `Groq error: ${raw}`, errorCode: "GROQ_ERROR" })}
+
+`);
+      res.end();
+    }
+    return;
+  }
   try {
     const normalized = [];
     for (const m of messages) {
