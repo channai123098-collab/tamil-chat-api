@@ -61473,6 +61473,120 @@ async function geminiAnalyzeBody(imageBase64, imageMimeType) {
     return { body: "", attire: "" };
   }
 }
+var faceSwapJobs = /* @__PURE__ */ new Map();
+setInterval(() => {
+  const cutoff = Date.now() - 30 * 60 * 1e3;
+  for (const [id, job] of faceSwapJobs) {
+    if (job.createdAt < cutoff) faceSwapJobs.delete(id);
+  }
+}, 5 * 60 * 1e3);
+async function performFaceSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType) {
+  const hfToken = process.env.HF_TOKEN;
+  const spaceUrl = "https://tonyassi-face-swap.hf.space";
+  const headers = { "Content-Type": "application/json" };
+  if (hfToken) headers["Authorization"] = `Bearer ${hfToken}`;
+  const submitRes = await fetch(`${spaceUrl}/call/predict`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      data: [
+        { url: `data:${sourceMimeType};base64,${sourceBase64}` },
+        { url: `data:${targetMimeType};base64,${targetBase64}` }
+      ]
+    }),
+    signal: AbortSignal.timeout(3e4)
+  });
+  if (!submitRes.ok) {
+    const txt = await submitRes.text().catch(() => "");
+    throw new Error(`HF submit failed ${submitRes.status}: ${txt.slice(0, 200)}`);
+  }
+  const { event_id } = await submitRes.json();
+  logger.info({ event_id }, "Face swap submitted");
+  const pollRes = await fetch(`${spaceUrl}/call/predict/${event_id}`, {
+    headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : {},
+    signal: AbortSignal.timeout(12e4)
+  });
+  if (!pollRes.ok) throw new Error(`HF poll failed ${pollRes.status}`);
+  const sseText = await pollRes.text();
+  const lines = sseText.split("\n");
+  let lastEvent = "";
+  let completeData = "";
+  for (const line of lines) {
+    if (line.startsWith("event: ")) lastEvent = line.slice(7).trim();
+    else if (line.startsWith("data: ")) {
+      if (lastEvent === "error") throw new Error(`HF error: ${line.slice(6)}`);
+      if (lastEvent === "complete") {
+        completeData = line.slice(6).trim();
+        break;
+      }
+    }
+  }
+  if (!completeData) throw new Error("Face swap did not complete in time");
+  let resultData;
+  try {
+    resultData = JSON.parse(completeData);
+  } catch {
+    throw new Error("Invalid JSON from face swap");
+  }
+  const outputImg = Array.isArray(resultData) ? resultData[0] : resultData;
+  let b64_json = "";
+  let mimeType = "image/png";
+  if (outputImg && typeof outputImg === "object" && "url" in outputImg) {
+    const imgUrl = outputImg.url;
+    if (imgUrl.startsWith("data:")) {
+      const m = imgUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!m) throw new Error("Bad data URL");
+      mimeType = m[1];
+      b64_json = m[2];
+    } else {
+      const fetchUrl = imgUrl.startsWith("/tmp") ? `${spaceUrl}/file=${imgUrl}` : imgUrl;
+      const imgRes = await fetch(fetchUrl, { headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : {}, signal: AbortSignal.timeout(3e4) });
+      if (!imgRes.ok) throw new Error(`Fetch result failed ${imgRes.status}`);
+      const buf = await imgRes.arrayBuffer();
+      b64_json = Buffer.from(buf).toString("base64");
+      mimeType = imgRes.headers.get("content-type") || "image/png";
+    }
+  } else if (typeof outputImg === "string") {
+    const fetchUrl = outputImg.startsWith("/tmp") ? `${spaceUrl}/file=${outputImg}` : outputImg;
+    const imgRes = await fetch(fetchUrl, { headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : {}, signal: AbortSignal.timeout(3e4) });
+    if (!imgRes.ok) throw new Error(`Fetch result failed ${imgRes.status}`);
+    const buf = await imgRes.arrayBuffer();
+    b64_json = Buffer.from(buf).toString("base64");
+    mimeType = imgRes.headers.get("content-type") || "image/png";
+  } else {
+    throw new Error(`Unexpected face swap output: ${JSON.stringify(outputImg)}`);
+  }
+  return { b64_json, mimeType };
+}
+router3.post("/image/face-swap/start", (req, res) => {
+  const body = req.body;
+  if (!body.sourceBase64 || !body.targetBase64) {
+    res.status(400).json({ error: "sourceBase64 and targetBase64 required" });
+    return;
+  }
+  const jobId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  faceSwapJobs.set(jobId, { status: "pending", createdAt: Date.now() });
+  performFaceSwap(
+    body.sourceBase64,
+    body.sourceMimeType || "image/jpeg",
+    body.targetBase64,
+    body.targetMimeType || "image/jpeg"
+  ).then((result) => {
+    faceSwapJobs.set(jobId, { status: "done", result, createdAt: Date.now() });
+  }).catch((err) => {
+    logger.error({ err, jobId }, "Face swap failed");
+    faceSwapJobs.set(jobId, { status: "error", error: err instanceof Error ? err.message : String(err), createdAt: Date.now() });
+  });
+  res.json({ jobId });
+});
+router3.get("/image/face-swap/status/:jobId", (req, res) => {
+  const job = faceSwapJobs.get(req.params.jobId);
+  if (!job) {
+    res.status(404).json({ error: "Job not found" });
+    return;
+  }
+  res.json(job);
+});
 router3.post("/image/analyze-body", async (req, res) => {
   const body = req.body;
   const imageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64 : null;
