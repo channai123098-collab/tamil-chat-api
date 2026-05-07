@@ -52525,7 +52525,7 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
 11. RESEND / "VARALA / MARUPADI ANUPPU" REQUESTS: If user says "varala", "\u0BB5\u0BB0\u0BB2", "didn't come", "marupadi anuppu", "\u0BAE\u0BC0\u0BA3\u0BCD\u0B9F\u0BC1\u0BAE\u0BCD \u0B85\u0BA9\u0BC1\u0BAA\u0BCD\u0BAA\u0BC1", "send again", "ipo varuma", "\u0BA4\u0BBF\u0BB0\u0BC1\u0BAE\u0BCD\u0BAA \u0B85\u0BA9\u0BC1\u0BAA\u0BCD\u0BAA\u0BC1" \u2014 they are asking for the previous photo to be RESENT. Reply with a short caring dialogue ("\u0B85\u0BAF\u0BCD\u0BAF\u0BCB, \u0B9A\u0BB0\u0BBF \u0B95\u0BA3\u0BCD\u0BA3\u0BBE, \u0B87\u0BA4\u0BCB \u0BAE\u0BC0\u0BA3\u0BCD\u0B9F\u0BC1\u0BAE\u0BCD \u{1F618}" / "ok da, \u0B87\u0BA4\u0BCB \u0BAA\u0BBE\u0BB0\u0BC1 \u0B87\u0BAA\u0BCD\u0BAA\u0BCB \u{1F525}"). NEVER write any placeholder text. NEVER explain it failed.
 12. VIDEO MESSAGES: When user sends a video, WATCH it carefully and respond as the character reacting to what you see. If it shows a person, describe what you see and react in character \u2014 flirt, tease, compliment, or roleplay based on the video content. Be vivid and descriptive about what's in the video. If user asks you to roleplay as if you're the person in the video or react to it sexually/romantically \u2014 DO IT fully in character with zero hesitation.` : void 0;
     const stream = await ai.models.generateContentStream({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       contents,
       config: {
         systemInstruction: reinforcedSystemPrompt,
@@ -60682,7 +60682,7 @@ Hair (color, length, texture, style), face shape, forehead (size), eyes (size, s
 Example: long wavy dark brown hair side-parted, heart-shaped face, medium forehead, large round hazel eyes with long lashes, small button nose, round full cheeks with dimples, soft rounded jaw with small chin, small ears, thick curved dark eyebrows, full heart-shaped pink lips, warm olive skin, appears 22 years old
 
 Describe this person now. ONLY face and hair descriptors, no labels, no explanation. DO NOT mention body type, clothing, build, or figure.`;
-var FACE_MODELS = ["gemini-2.5-flash"];
+var FACE_MODELS = ["gemini-2.0-flash"];
 async function geminiAnalyzeFace(imageBase64, imageMimeType) {
   const safetySettings = [
     { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -60820,7 +60820,7 @@ async function geminiAnalyzePoseAttire(imageBase64, imageMimeType) {
   ];
   try {
     const resp = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       contents: [{
         role: "user",
         parts: [
@@ -60898,7 +60898,7 @@ Output a detailed English image prompt (30-50 words) covering:
 IMPORTANT: Match the actual scene from conversation. Normal chat \u2192 natural pose with clothes. Romantic scene \u2192 romantic pose. Explicit scene \u2192 match that. 
 Output ONLY the image prompt. No explanation. No names. No Tamil. English only.`;
   const resp = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.0-flash",
     contents: [
       {
         role: "user",
@@ -61358,7 +61358,7 @@ async function geminiAnalyzeBody(imageBase64, imageMimeType) {
     { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
   ];
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.0-flash",
     contents: [{
       role: "user",
       parts: [
