@@ -61483,9 +61483,10 @@ setInterval(() => {
 async function performFaceSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType, passedToken) {
   const hfToken = passedToken || process.env.HF_TOKEN;
   const spaceUrl = "https://tonyassi-face-swap.hf.space";
+  const apiBase = `${spaceUrl}/gradio_api`;
   const headers = { "Content-Type": "application/json" };
   if (hfToken) headers["Authorization"] = `Bearer ${hfToken}`;
-  const submitRes = await fetch(`${spaceUrl}/call/predict`, {
+  const submitRes = await fetch(`${apiBase}/call/swap_faces`, {
     method: "POST",
     headers,
     body: JSON.stringify({
@@ -61502,7 +61503,7 @@ async function performFaceSwap(sourceBase64, sourceMimeType, targetBase64, targe
   }
   const { event_id } = await submitRes.json();
   logger.info({ event_id }, "Face swap submitted");
-  const pollRes = await fetch(`${spaceUrl}/call/predict/${event_id}`, {
+  const pollRes = await fetch(`${apiBase}/call/swap_faces/${event_id}`, {
     headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : {},
     signal: AbortSignal.timeout(12e4)
   });
@@ -61539,7 +61540,7 @@ async function performFaceSwap(sourceBase64, sourceMimeType, targetBase64, targe
       mimeType = m[1];
       b64_json = m[2];
     } else {
-      const fetchUrl = imgUrl.startsWith("/tmp") ? `${spaceUrl}/file=${imgUrl}` : imgUrl;
+      const fetchUrl = imgUrl.startsWith("/") ? `${spaceUrl}${imgUrl}` : imgUrl;
       const imgRes = await fetch(fetchUrl, { headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : {}, signal: AbortSignal.timeout(3e4) });
       if (!imgRes.ok) throw new Error(`Fetch result failed ${imgRes.status}`);
       const buf = await imgRes.arrayBuffer();
@@ -61547,7 +61548,7 @@ async function performFaceSwap(sourceBase64, sourceMimeType, targetBase64, targe
       mimeType = imgRes.headers.get("content-type") || "image/png";
     }
   } else if (typeof outputImg === "string") {
-    const fetchUrl = outputImg.startsWith("/tmp") ? `${spaceUrl}/file=${outputImg}` : outputImg;
+    const fetchUrl = outputImg.startsWith("/") ? `${spaceUrl}${outputImg}` : outputImg;
     const imgRes = await fetch(fetchUrl, { headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : {}, signal: AbortSignal.timeout(3e4) });
     if (!imgRes.ok) throw new Error(`Fetch result failed ${imgRes.status}`);
     const buf = await imgRes.arrayBuffer();
