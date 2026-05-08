@@ -60304,8 +60304,34 @@ var FABRIC_KEYWORDS = [
   "outfit",
   "attire"
 ];
+var SAREE_REMOVAL_KEYWORDS = [
+  "hiked up",
+  "hike up",
+  "pulled up",
+  "lifted up",
+  "tucked up",
+  "fallen off",
+  "falling off",
+  "dropped",
+  "slipped off",
+  "removed",
+  "legs exposed",
+  "legs fully exposed",
+  "thighs exposed",
+  "thighs visible",
+  "holding saree up",
+  "saree up",
+  "no saree",
+  "without saree",
+  "pallu dropped",
+  "pallu fallen",
+  "pallu off",
+  "saree drop"
+];
 function shouldUseFabricStyle(prompt) {
   const lower = prompt.toLowerCase();
+  const isSareeRemoval = SAREE_REMOVAL_KEYWORDS.some((k) => lower.includes(k));
+  if (isSareeRemoval) return false;
   return FABRIC_KEYWORDS.some((k) => lower.includes(k.toLowerCase()));
 }
 function styleStackFor(prompt) {
