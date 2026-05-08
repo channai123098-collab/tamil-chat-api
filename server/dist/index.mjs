@@ -61490,35 +61490,14 @@ setInterval(() => {
     if (job.createdAt < cutoff) faceSwapJobs.delete(id);
   }
 }, 5 * 60 * 1e3);
-async function performFaceSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType, passedToken) {
-  const hfToken = passedToken || process.env.HF_TOKEN;
-  const spaceUrl = "https://tonyassi-face-swap.hf.space";
-  const apiBase = `${spaceUrl}/gradio_api`;
-  const headers = { "Content-Type": "application/json" };
-  if (hfToken) headers["Authorization"] = `Bearer ${hfToken}`;
-  const submitRes = await fetch(`${apiBase}/call/swap_faces`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      data: [
-        { url: `data:${sourceMimeType};base64,${sourceBase64}` },
-        { url: `data:${targetMimeType};base64,${targetBase64}` }
-      ]
-    }),
-    signal: AbortSignal.timeout(3e4)
-  });
-  if (!submitRes.ok) {
-    const txt = await submitRes.text().catch(() => "");
-    throw new Error(`HF submit failed ${submitRes.status}: ${txt.slice(0, 200)}`);
-  }
-  const { event_id } = await submitRes.json();
-  logger.info({ event_id }, "Face swap submitted");
-  const pollRes = await fetch(`${apiBase}/call/swap_faces/${event_id}`, {
-    headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : {},
-    signal: AbortSignal.timeout(12e4)
-  });
-  if (!pollRes.ok) throw new Error(`HF poll failed ${pollRes.status}`);
-  const sseText = await pollRes.text();
+async function fetchImgAsB64(url, baseUrl3, authHeader) {
+  const fetchUrl = url.startsWith("/") ? `${baseUrl3}${url}` : url;
+  const res = await fetch(fetchUrl, { headers: authHeader, signal: AbortSignal.timeout(3e4) });
+  if (!res.ok) throw new Error(`Fetch result failed ${res.status}`);
+  const buf = await res.arrayBuffer();
+  return { b64_json: Buffer.from(buf).toString("base64"), mimeType: res.headers.get("content-type") || "image/png" };
+}
+async function parseGradioSSE(sseText) {
   const lines = sseText.split("\n");
   let lastEvent = "";
   let completeData = "";
@@ -61533,41 +61512,135 @@ async function performFaceSwap(sourceBase64, sourceMimeType, targetBase64, targe
     }
   }
   if (!completeData) throw new Error("Face swap did not complete in time");
-  let resultData;
   try {
-    resultData = JSON.parse(completeData);
+    return JSON.parse(completeData);
   } catch {
     throw new Error("Invalid JSON from face swap");
   }
+}
+async function tryTonyassiSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType, hfToken) {
+  const spaceUrl = "https://tonyassi-face-swap.hf.space";
+  const apiBase = `${spaceUrl}/gradio_api`;
+  const authHdr = hfToken ? { Authorization: `Bearer ${hfToken}` } : {};
+  const headers = { "Content-Type": "application/json", ...authHdr };
+  const submitRes = await fetch(`${apiBase}/call/swap_faces`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ data: [
+      { url: `data:${sourceMimeType};base64,${sourceBase64}` },
+      { url: `data:${targetMimeType};base64,${targetBase64}` }
+    ] }),
+    signal: AbortSignal.timeout(3e4)
+  });
+  if (!submitRes.ok) throw new Error(`tonyassi submit ${submitRes.status}`);
+  const { event_id } = await submitRes.json();
+  logger.info({ event_id }, "tonyassi face swap submitted");
+  const pollRes = await fetch(`${apiBase}/call/swap_faces/${event_id}`, { headers: authHdr, signal: AbortSignal.timeout(12e4) });
+  if (!pollRes.ok) throw new Error(`tonyassi poll ${pollRes.status}`);
+  const resultData = await parseGradioSSE(await pollRes.text());
   const outputImg = Array.isArray(resultData) ? resultData[0] : resultData;
-  let b64_json = "";
-  let mimeType = "image/png";
   if (outputImg && typeof outputImg === "object" && "url" in outputImg) {
     const imgUrl = outputImg.url;
     if (imgUrl.startsWith("data:")) {
       const m = imgUrl.match(/^data:([^;]+);base64,(.+)$/);
       if (!m) throw new Error("Bad data URL");
-      mimeType = m[1];
-      b64_json = m[2];
-    } else {
-      const fetchUrl = imgUrl.startsWith("/") ? `${spaceUrl}${imgUrl}` : imgUrl;
-      const imgRes = await fetch(fetchUrl, { headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : {}, signal: AbortSignal.timeout(3e4) });
-      if (!imgRes.ok) throw new Error(`Fetch result failed ${imgRes.status}`);
-      const buf = await imgRes.arrayBuffer();
-      b64_json = Buffer.from(buf).toString("base64");
-      mimeType = imgRes.headers.get("content-type") || "image/png";
+      return { mimeType: m[1], b64_json: m[2] };
     }
+    return fetchImgAsB64(imgUrl, spaceUrl, authHdr);
   } else if (typeof outputImg === "string") {
-    const fetchUrl = outputImg.startsWith("/") ? `${spaceUrl}${outputImg}` : outputImg;
-    const imgRes = await fetch(fetchUrl, { headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : {}, signal: AbortSignal.timeout(3e4) });
-    if (!imgRes.ok) throw new Error(`Fetch result failed ${imgRes.status}`);
-    const buf = await imgRes.arrayBuffer();
-    b64_json = Buffer.from(buf).toString("base64");
-    mimeType = imgRes.headers.get("content-type") || "image/png";
-  } else {
-    throw new Error(`Unexpected face swap output: ${JSON.stringify(outputImg)}`);
+    return fetchImgAsB64(outputImg, spaceUrl, authHdr);
   }
-  return { b64_json, mimeType };
+  throw new Error(`tonyassi unexpected output: ${JSON.stringify(outputImg)}`);
+}
+async function tryGoofyaiSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType, hfToken) {
+  const spaceUrl = "https://goofyai-face-swap.hf.space";
+  const apiBase = `${spaceUrl}/gradio_api`;
+  const authHdr = hfToken ? { Authorization: `Bearer ${hfToken}` } : {};
+  const headers = { "Content-Type": "application/json", ...authHdr };
+  const submitRes = await fetch(`${apiBase}/call/predict`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ data: [
+      { url: `data:${sourceMimeType};base64,${sourceBase64}` },
+      { url: `data:${targetMimeType};base64,${targetBase64}` }
+    ] }),
+    signal: AbortSignal.timeout(3e4)
+  });
+  if (!submitRes.ok) throw new Error(`goofyai submit ${submitRes.status}`);
+  const { event_id } = await submitRes.json();
+  logger.info({ event_id }, "goofyai face swap submitted");
+  const pollRes = await fetch(`${apiBase}/call/predict/${event_id}`, { headers: authHdr, signal: AbortSignal.timeout(12e4) });
+  if (!pollRes.ok) throw new Error(`goofyai poll ${pollRes.status}`);
+  const resultData = await parseGradioSSE(await pollRes.text());
+  const outputImg = Array.isArray(resultData) ? resultData[0] : resultData;
+  if (outputImg && typeof outputImg === "object" && "url" in outputImg) {
+    const imgUrl = outputImg.url;
+    if (imgUrl.startsWith("data:")) {
+      const m = imgUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!m) throw new Error("Bad data URL");
+      return { mimeType: m[1], b64_json: m[2] };
+    }
+    return fetchImgAsB64(imgUrl, spaceUrl, authHdr);
+  } else if (typeof outputImg === "string") {
+    return fetchImgAsB64(outputImg, spaceUrl, authHdr);
+  }
+  throw new Error(`goofyai unexpected output: ${JSON.stringify(outputImg)}`);
+}
+async function tryFelixFaceSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType, hfToken) {
+  const spaceUrl = "https://felixrosberg-face-swap.hf.space";
+  const apiBase = `${spaceUrl}/gradio_api`;
+  const authHdr = hfToken ? { Authorization: `Bearer ${hfToken}` } : {};
+  const headers = { "Content-Type": "application/json", ...authHdr };
+  const submitRes = await fetch(`${apiBase}/call/predict`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ data: [
+      { url: `data:${sourceMimeType};base64,${sourceBase64}` },
+      { url: `data:${targetMimeType};base64,${targetBase64}` },
+      0,
+      100
+    ] }),
+    signal: AbortSignal.timeout(3e4)
+  });
+  if (!submitRes.ok) throw new Error(`felix submit ${submitRes.status}`);
+  const { event_id } = await submitRes.json();
+  logger.info({ event_id }, "felix face swap submitted");
+  const pollRes = await fetch(`${apiBase}/call/predict/${event_id}`, { headers: authHdr, signal: AbortSignal.timeout(12e4) });
+  if (!pollRes.ok) throw new Error(`felix poll ${pollRes.status}`);
+  const resultData = await parseGradioSSE(await pollRes.text());
+  const outputImg = Array.isArray(resultData) ? resultData[0] : resultData;
+  if (outputImg && typeof outputImg === "object" && "url" in outputImg) {
+    const imgUrl = outputImg.url;
+    if (imgUrl.startsWith("data:")) {
+      const m = imgUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!m) throw new Error("Bad data URL");
+      return { mimeType: m[1], b64_json: m[2] };
+    }
+    return fetchImgAsB64(imgUrl, spaceUrl, authHdr);
+  } else if (typeof outputImg === "string") {
+    return fetchImgAsB64(outputImg, spaceUrl, authHdr);
+  }
+  throw new Error(`felix unexpected output: ${JSON.stringify(outputImg)}`);
+}
+async function performFaceSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType, passedToken) {
+  const hfToken = passedToken || process.env.HF_TOKEN;
+  const spaces = [
+    { name: "tonyassi", fn: () => tryTonyassiSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType, hfToken) },
+    { name: "goofyai", fn: () => tryGoofyaiSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType, hfToken) },
+    { name: "felix", fn: () => tryFelixFaceSwap(sourceBase64, sourceMimeType, targetBase64, targetMimeType, hfToken) }
+  ];
+  let lastErr = new Error("All face swap spaces failed");
+  for (const { name, fn } of spaces) {
+    try {
+      const result = await fn();
+      logger.info({ space: name }, "Face swap success");
+      return result;
+    } catch (e) {
+      logger.warn({ space: name, err: e instanceof Error ? e.message : String(e) }, "Face swap space failed, trying next");
+      lastErr = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  throw lastErr;
 }
 router3.post("/image/face-swap/start", (req, res) => {
   const body = req.body;
