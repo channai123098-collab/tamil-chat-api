@@ -59954,28 +59954,53 @@ var ATTIRE_TOKENS = [
 var MODEST_POSITIVE = "fully clothed, modest conservative outfit, proper Indian clothing, covered body, elegant dignified appearance, natural makeup, cinematic lighting";
 var MODEST_NEGATIVE = "nsfw, nude, semi-nude, cleavage, deep cleavage, breasts visible, nipple, areola, underboob, sideboob, transparent dress, see-through, lingerie, bra visible, bra strap visible, revealing dress, tight revealing outfit, body-hugging tight dress, body-revealing dress, exposed midriff, navel visible, bare belly, exposed thighs, high slit, groin area visible, pelvic area visible, buttocks, provocative pose, overly glamorous pose, erotic expression, tongue out, seductive look, low neckline, deep neckline, low cut top, wet clothes, body highlight, sleeveless, off-shoulder, bare shoulders, short skirt, mini skirt, bare legs, leg exposure, skin exposure, breast exposure, innerwear visible, underwear exposed, private parts visible, genitals, indecent, obscene, NSFW, erotic, sexualized, swimwear, bikini, revealing clothing, see-through fabric, sheer clothing, transparent fabric, partial nudity, half nude, topless, naked, nudity, indecent exposure, unrealistic body proportions";
 var NSFW_ATTIRE_KEYWORDS = [
+  // Core NSFW labels
   "nsfw",
   "nude",
   "naked",
   "topless",
   "semi-nude",
-  "cleavage",
-  "nipple",
-  "areola",
-  "breasts visible",
-  "lingerie",
-  "revealing",
   "explicit",
   "erotic",
   "seductive",
+  "lingerie",
+  // Breast / chest exposure
+  "nipple",
+  "areola",
+  "cleavage",
   "underboob",
   "sideboob",
+  "breasts visible",
+  "breast exposed",
+  "bare breast",
+  "breasts exposed",
+  "breast out",
+  "breast hanging",
+  "breast fall",
+  "breast uncov",
+  "bare chest",
+  "no bra",
+  "no top",
+  "no shirt",
+  "pallu drop",
+  "saree drop",
+  // Fabric / transparency
   "transparent",
   "see-through",
+  "sheer",
   "bra visible",
+  // Body exposure
   "navel visible",
   "bare midriff",
-  "thighs exposed"
+  "bare belly",
+  "thighs exposed",
+  "revealing",
+  "pussy",
+  "vagina",
+  "panties",
+  "genitals",
+  // Standalone "breast" in attire is inherently NSFW
+  "breast"
 ];
 function isNsfwAttire(attire) {
   const lower = attire.toLowerCase();
@@ -61229,6 +61254,9 @@ async function processImageBody(body) {
         sceneDesc = buildSceneFromContext(context, mode, convNsfwResult);
       }
     } else {
+      if (context.length > 0) {
+        convNsfwResult = analyzeNsfw(context.slice(-6).map((m) => m.content));
+      }
       sceneDesc = "natural confident pose, soft smile, warm lighting";
     }
     const characterIsNsfwEarly = isNsfwAttire(imgAttire);
