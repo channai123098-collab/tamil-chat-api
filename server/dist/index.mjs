@@ -60521,7 +60521,7 @@ async function generateWithStableHorde(prompt, isCouple = false, negativePrompt 
   const seed = Math.floor(Math.random() * 2147483647);
   const fullPrompt = `${enrichedPrompt} ### ${negPrompt}`;
   const useImg2Img = !isCouple && !!referenceImageBase64 && !isNsfw;
-  const hordeModel = isNsfw ? process.env.HORDE_NSFW_MODEL ?? "Dreamshaper" : HORDE_DEFAULT_MODEL;
+  const hordeModel = isNsfw ? process.env.HORDE_NSFW_MODEL ?? "Pony Diffusion XL" : HORDE_DEFAULT_MODEL;
   logger.info({ enrichedPrompt, isNsfw, seed, useImg2Img, model: hordeModel }, "Stable Horde request");
   const createResp = await fetch(`${HORDE_BASE}/generate/async`, {
     method: "POST",
