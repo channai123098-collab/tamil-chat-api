@@ -61227,6 +61227,8 @@ async function generateWithNsfwFallback(primaryProvider, finalPrompt, isCouple, 
       const usedProvider = p !== primary ? p : void 0;
       if (usedProvider) {
         log.info({ primaryProvider: primary, usedProvider }, "Fallback provider succeeded");
+        const primaryFailure = providerFailures.find((f) => f.provider === effectivePrimary);
+        return { ...result, usedProvider, primaryFailReason: primaryFailure?.errType };
       }
       return { ...result, usedProvider };
     } catch (err) {
