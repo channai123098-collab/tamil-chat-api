@@ -52472,7 +52472,17 @@ router2.post("/chat/stream", async (req, res) => {
     try {
       const groqMessages = [];
       if (systemPrompt) {
-        groqMessages.push({ role: "system", content: systemPrompt });
+        const tamilGuidance = `LANGUAGE RULES (STRICT \u2014 follow exactly):
+\u2022 Reply ONLY in Tamil (\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD). Never switch to English mid-sentence.
+\u2022 Use natural spoken Tamil \u2014 casual, colloquial, WhatsApp-style.
+\u2022 Spoken Tamil grammar: "\u0B87\u0BB0\u0BC1\u0B95\u0BCD\u0B95\u0BC7\u0BA9\u0BCD" (not "\u0B87\u0BB0\u0BC1\u0B95\u0BCD\u0B95\u0BBF\u0BB1\u0BC7\u0BA9\u0BCD"), "\u0BB5\u0BA8\u0BCD\u0BA4\u0BC7\u0BA9\u0BCD" (not "\u0BB5\u0BA8\u0BCD\u0BA4\u0BC7\u0BA9\u0BCD \u0BA8\u0BBE\u0BA9\u0BCD"), "\u0BAA\u0BA3\u0BCD\u0BB1" (not "\u0B9A\u0BC6\u0BAF\u0BCD\u0B95\u0BBF\u0BB1\u0BC7\u0BA9\u0BCD").
+\u2022 Commands/suggestions: use imperative \u2014 "\u0B87\u0BB0\u0BC1", "\u0BB5\u0BBE", "\u0BAA\u0BBE\u0BB0\u0BCD" (not "\u0B87\u0BB0\u0BC1\u0B95\u0BCD\u0B95\u0BC1", "\u0BB5\u0BB0\u0BC1\u0B95\u0BBF\u0BB1\u0BA4\u0BC1").
+\u2022 Do NOT repeat the same word/phrase twice in one sentence.
+\u2022 Keep responses short, warm, natural \u2014 2\u20134 sentences max unless asked more.
+\u2022 Tamil punctuation: use "\u2014" for dramatic pause, "\u{1F60A} \u{1F97A} \u{1F60D}" emojis sparingly.
+
+`;
+        groqMessages.push({ role: "system", content: tamilGuidance + systemPrompt });
       }
       for (const m of messages) {
         groqMessages.push({ role: m.role === "assistant" ? "assistant" : "user", content: m.content ?? "" });
