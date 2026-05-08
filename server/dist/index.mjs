@@ -60332,6 +60332,8 @@ function shouldUseFabricStyle(prompt) {
   const lower = prompt.toLowerCase();
   const isSareeRemoval = SAREE_REMOVAL_KEYWORDS.some((k) => lower.includes(k));
   if (isSareeRemoval) return false;
+  const hasNsfwExposure = /exposed|exposure|bare |topless|nude|naked|slipping out|see.through|nipple|cleavage|thigh|slit|wet cloth|spread|groin|breast|buttock|lingerie|panties|pallu/i.test(lower);
+  if (hasNsfwExposure) return false;
   return FABRIC_KEYWORDS.some((k) => lower.includes(k.toLowerCase()));
 }
 function styleStackFor(prompt) {
