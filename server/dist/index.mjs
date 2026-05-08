@@ -59894,7 +59894,6 @@ var BREAST_WORDS = [
   "breast",
   "boob",
   "\u0BAE\u0BBE\u0BB0\u0BCD\u0BAA\u0BC1",
-  "cleavage",
   "topless",
   "\u0BAE\u0BC1\u0BB2\u0BC8",
   "\u0BAE\u0BCA\u0BB2\u0BC8",
@@ -59917,7 +59916,10 @@ var BREAST_WORDS = [
   "open top",
   "no bra",
   "bra \u0B87\u0BB2\u0BCD\u0BB2\u0BBE\u0BAE\u0BB2\u0BCD",
-  "bra \u0B87\u0BB2\u0BCD\u0BB2"
+  "bra \u0B87\u0BB2\u0BCD\u0BB2",
+  "bare breast",
+  "breast exposed",
+  "breast out"
 ];
 var HALF_REVEAL_WORDS = [
   "half",
@@ -59930,7 +59932,16 @@ var HALF_REVEAL_WORDS = [
   "lingerie",
   "bra",
   "underwear",
-  "see through"
+  "see through",
+  "cleavage",
+  "low cut",
+  "deep neckline",
+  "slit",
+  "thigh",
+  "legs spread",
+  "\u0B95\u0BBE\u0BB2\u0BCD \u0BAA\u0BBF\u0BB3\u0BB5\u0BC1",
+  "\u0B87\u0B9F\u0BC1\u0BAA\u0BCD\u0BAA\u0BC1",
+  "\u0BA8\u0BBE\u0BAA\u0BBF"
 ];
 var ATTIRE_TOKENS = [
   "outfit",
@@ -60033,7 +60044,7 @@ function analyzeNsfw(texts) {
     attireBoosts.push("topless");
   }
   if (wantsHalfReveal && !wantsNudity && !wantsTopless) {
-    boosts.push("revealing outfit, partially exposed, seductive clothing, deep cleavage, low cut");
+    boosts.push("revealing outfit, partially exposed, sensual pose, seductive expression");
     attireBoosts.push("revealing");
   }
   if (wantsExplicit) {
@@ -60339,7 +60350,7 @@ function buildGenderBoost(nsfw, isMale) {
     }
   }
   if (nsfw.wantsHalfReveal && !nsfw.wantsNudity && !nsfw.wantsTopless) {
-    boosts.push("revealing outfit, partially exposed, seductive clothing, deep cleavage, low cut");
+    boosts.push("revealing outfit, partially exposed, sensual pose, seductive expression");
   }
   if (nsfw.wantsExplicit) {
     boosts.push("sensual, seductive, alluring pose, intimate expression");
@@ -61241,7 +61252,8 @@ async function processImageBody(body) {
     const genderBoost = buildGenderBoost(nsfw, isMale);
     let convNsfwResult = null;
     if (userPrompt) {
-      sceneDesc = genderBoost ? `${userPrompt}, ${genderBoost}` : userPrompt;
+      const promptHasExplicitNsfw = /topless|nude|naked|bare breast|nipple|vagina|pussy|legs spread|legs exposed|thigh|cleavage|lingerie|panties|underwear|bare body|no clothes/i.test(userPrompt);
+      sceneDesc = genderBoost && !promptHasExplicitNsfw ? `${userPrompt}, ${genderBoost}` : userPrompt;
     } else if (mode === "context" || mode === "together") {
       try {
         const convIsNsfw = nsfw.wantsNudity || nsfw.wantsTopless || nsfw.wantsExplicit;
