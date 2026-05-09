@@ -18880,14 +18880,14 @@ var require_etag = __commonJS({
   "../../node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports, module) {
     "use strict";
     module.exports = etag;
-    var crypto2 = __require("crypto");
+    var crypto3 = __require("crypto");
     var Stats = __require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash = crypto2.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash = crypto3.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash + '"';
     }
@@ -22302,17 +22302,17 @@ var require_content_disposition = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js"(exports) {
-    var crypto2 = __require("crypto");
+    var crypto3 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto2.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto3.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports.unsign = function(input, secret) {
       if ("string" != typeof input) throw new TypeError("Signed cookie string must be provided.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
       var tentativeValue = input.slice(0, input.lastIndexOf(".")), expectedInput = exports.sign(tentativeValue, secret), expectedBuffer = Buffer.from(expectedInput), inputBuffer = Buffer.from(input);
-      return expectedBuffer.length === inputBuffer.length && crypto2.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
+      return expectedBuffer.length === inputBuffer.length && crypto3.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
     };
   }
 });
@@ -37661,7 +37661,7 @@ var require_form_data = __commonJS({
     var parseUrl = __require("url").parse;
     var fs = __require("fs");
     var Stream2 = __require("stream").Stream;
-    var crypto2 = __require("crypto");
+    var crypto3 = __require("crypto");
     var mime = require_mime_types2();
     var asynckit = require_asynckit();
     var setToStringTag = require_es_set_tostringtag();
@@ -37867,7 +37867,7 @@ var require_form_data = __commonJS({
       return Buffer.concat([dataBuffer, Buffer.from(this._lastBoundary())]);
     };
     FormData2.prototype._generateBoundary = function() {
-      this._boundary = "--------------------------" + crypto2.randomBytes(12).toString("hex");
+      this._boundary = "--------------------------" + crypto3.randomBytes(12).toString("hex");
     };
     FormData2.prototype.getLengthSync = function() {
       var knownLength = this._overheadLength + this._valueLength;
@@ -38504,7 +38504,7 @@ var require_axios = __commonJS({
   "../../node_modules/.pnpm/axios@1.16.0/node_modules/axios/dist/node/axios.cjs"(exports, module) {
     "use strict";
     var FormData$1 = require_form_data();
-    var crypto2 = __require("crypto");
+    var crypto3 = __require("crypto");
     var url = __require("url");
     var http = __require("http");
     var https = __require("https");
@@ -39630,7 +39630,7 @@ var require_axios = __commonJS({
         length
       } = alphabet;
       const randomValues = new Uint32Array(size);
-      crypto2.randomFillSync(randomValues);
+      crypto3.randomFillSync(randomValues);
       for (let i = 0; i < size; i++) {
         str2 += alphabet[randomValues[i] % length];
       }
@@ -52694,6 +52694,7 @@ var chat_default = router2;
 
 // src/routes/image.ts
 var import_express3 = __toESM(require_express2(), 1);
+import crypto2 from "node:crypto";
 
 // ../../node_modules/.pnpm/openai@6.35.0_ws@8.20.0_zod@4.3.6/node_modules/openai/internal/tslib.mjs
 function __classPrivateFieldSet(receiver, state, value, kind, f) {
@@ -52715,13 +52716,13 @@ function __classPrivateFieldGet(receiver, state, kind, f) {
 
 // ../../node_modules/.pnpm/openai@6.35.0_ws@8.20.0_zod@4.3.6/node_modules/openai/internal/utils/uuid.mjs
 var uuid4 = function() {
-  const { crypto: crypto2 } = globalThis;
-  if (crypto2?.randomUUID) {
-    uuid4 = crypto2.randomUUID.bind(crypto2);
-    return crypto2.randomUUID();
+  const { crypto: crypto3 } = globalThis;
+  if (crypto3?.randomUUID) {
+    uuid4 = crypto3.randomUUID.bind(crypto3);
+    return crypto3.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto2 ? () => crypto2.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto3 ? () => crypto3.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
@@ -61247,6 +61248,37 @@ async function generateWithNsfwFallback(primaryProvider, finalPrompt, isCouple, 
   aggregated.failures = providerFailures;
   throw aggregated;
 }
+async function uploadToCloudinary(b64, mimeType) {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey4 = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey4 || !apiSecret) return null;
+  try {
+    const timestamp = Math.floor(Date.now() / 1e3).toString();
+    const folder = "myaigirls";
+    const paramsToSign = `folder=${folder}&timestamp=${timestamp}`;
+    const signature = crypto2.createHash("sha1").update(paramsToSign + apiSecret).digest("hex");
+    const form = new FormData();
+    form.append("file", `data:${mimeType};base64,${b64}`);
+    form.append("api_key", apiKey4);
+    form.append("timestamp", timestamp);
+    form.append("signature", signature);
+    form.append("folder", folder);
+    const resp = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: "POST",
+      body: form
+    });
+    if (!resp.ok) {
+      logger.warn({ status: resp.status }, "Cloudinary upload failed");
+      return null;
+    }
+    const data = await resp.json();
+    return data.secure_url ?? null;
+  } catch (err) {
+    logger.warn({ err }, "Cloudinary upload error \u2014 skipping");
+    return null;
+  }
+}
 var imageJobs = /* @__PURE__ */ new Map();
 setInterval(() => {
   const cutoff = Date.now() - 30 * 60 * 1e3;
@@ -61417,7 +61449,8 @@ async function processImageBody(body) {
     }
   }
   logger.info({ provider, mode, personaName }, "Image generated");
-  return { b64_json: result.b64_json, mimeType: result.mimeType, prompt: sceneDesc, usedProvider: result.usedProvider };
+  const cloudinaryUrl = await uploadToCloudinary(result.b64_json, result.mimeType).catch(() => void 0) ?? void 0;
+  return { b64_json: result.b64_json, mimeType: result.mimeType, prompt: sceneDesc, usedProvider: result.usedProvider, primaryFailReason: result.primaryFailReason, cloudinaryUrl };
 }
 function buildErrorResponse(err) {
   const message = err instanceof Error ? err.message : "Unknown error";
