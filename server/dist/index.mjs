@@ -61337,7 +61337,7 @@ async function generateWithNsfwFallback(primaryProvider, finalPrompt, isCouple, 
   aggregated.failures = providerFailures;
   throw aggregated;
 }
-async function uploadToCloudinary(b64, mimeType, folder = "myaigirls") {
+async function uploadToCloudinary(b64, mimeType, folder = "myaigirls", publicId) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey4 = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
@@ -61345,7 +61345,11 @@ async function uploadToCloudinary(b64, mimeType, folder = "myaigirls") {
   try {
     const timestamp = Math.floor(Date.now() / 1e3).toString();
     const safeFolder = folder.trim().replace(/[^a-zA-Z0-9_\-/]/g, "") || "myaigirls";
-    const paramsToSign = `folder=${safeFolder}&timestamp=${timestamp}`;
+    const safePublicId = publicId ? publicId.trim().replace(/[^a-zA-Z0-9_\-.]/g, "").slice(0, 64) : "";
+    const signParts = [`folder=${safeFolder}`];
+    if (safePublicId) signParts.push(`public_id=${safePublicId}`);
+    signParts.push(`timestamp=${timestamp}`);
+    const paramsToSign = signParts.sort().join("&");
     const signature = crypto2.createHash("sha1").update(paramsToSign + apiSecret).digest("hex");
     const form = new FormData();
     form.append("file", `data:${mimeType};base64,${b64}`);
@@ -61353,6 +61357,7 @@ async function uploadToCloudinary(b64, mimeType, folder = "myaigirls") {
     form.append("timestamp", timestamp);
     form.append("signature", signature);
     form.append("folder", safeFolder);
+    if (safePublicId) form.append("public_id", safePublicId);
     const resp = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
       method: "POST",
       body: form
@@ -61887,12 +61892,12 @@ router3.post("/image/analyze-body", async (req, res) => {
   }
 });
 router3.post("/image/upload-to-cloud", async (req, res) => {
-  const { b64_json, mimeType, folder } = req.body;
+  const { b64_json, mimeType, folder, publicId } = req.body;
   if (!b64_json || !mimeType) {
     res.status(400).json({ error: "b64_json and mimeType required" });
     return;
   }
-  const url = await uploadToCloudinary(b64_json, mimeType, folder).catch(() => null);
+  const url = await uploadToCloudinary(b64_json, mimeType, folder, publicId).catch(() => null);
   if (!url) {
     res.status(503).json({ error: "Cloudinary upload failed \u2014 check CLOUDINARY_* env vars on server" });
     return;
@@ -61942,13 +61947,24 @@ router3.post("/image/cloudinary-delete", async (req, res) => {
     res.status(400).json({ error: "publicId required" });
     return;
   }
+  if (!/^[a-zA-Z0-9_./-]+$/.test(publicId) || publicId.length > 256 || publicId.includes("..")) {
+    res.status(400).json({ error: "Invalid publicId" });
+    return;
+  }
+  const ALLOWED_ROOTS = ["myaigirls", "photo-styles", "pictures", "camera", "movies", "downloads", "documents", "uploads"];
+  const rootOk = ALLOWED_ROOTS.some((r) => publicId === r || publicId.startsWith(r + "/"));
+  if (!rootOk) {
+    res.status(403).json({ error: "publicId outside allowed roots" });
+    return;
+  }
   try {
     const timestamp = Math.floor(Date.now() / 1e3);
-    const toSign = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+    const toSign = `invalidate=true&public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
     const signature = crypto2.createHash("sha1").update(toSign).digest("hex");
     const form = new URLSearchParams();
     form.append("public_id", publicId);
     form.append("timestamp", String(timestamp));
+    form.append("invalidate", "true");
     form.append("api_key", apiKey4);
     form.append("signature", signature);
     const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
