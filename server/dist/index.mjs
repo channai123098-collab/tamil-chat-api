@@ -61797,6 +61797,19 @@ router3.post("/image/analyze-body", async (req, res) => {
     res.status(500).json({ error: message });
   }
 });
+router3.post("/image/upload-to-cloud", async (req, res) => {
+  const { b64_json, mimeType } = req.body;
+  if (!b64_json || !mimeType) {
+    res.status(400).json({ error: "b64_json and mimeType required" });
+    return;
+  }
+  const url = await uploadToCloudinary(b64_json, mimeType).catch(() => null);
+  if (!url) {
+    res.status(503).json({ error: "Cloudinary upload failed \u2014 check CLOUDINARY_* env vars on server" });
+    return;
+  }
+  res.json({ url });
+});
 var image_default = router3;
 
 // src/routes/tts.ts
