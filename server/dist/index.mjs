@@ -18880,14 +18880,14 @@ var require_etag = __commonJS({
   "../../node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports, module) {
     "use strict";
     module.exports = etag;
-    var crypto3 = __require("crypto");
+    var crypto4 = __require("crypto");
     var Stats = __require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash = crypto3.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash = crypto4.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash + '"';
     }
@@ -20596,27 +20596,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router7;
+    module.exports = Router9;
     module.exports.Route = Route;
-    function Router7(options) {
-      if (!(this instanceof Router7)) {
-        return new Router7(options);
+    function Router9(options) {
+      if (!(this instanceof Router9)) {
+        return new Router9(options);
       }
       const opts = options || {};
-      function router7(req, res, next) {
-        router7.handle(req, res, next);
+      function router9(req, res, next) {
+        router9.handle(req, res, next);
       }
-      Object.setPrototypeOf(router7, this);
-      router7.caseSensitive = opts.caseSensitive;
-      router7.mergeParams = opts.mergeParams;
-      router7.params = {};
-      router7.strict = opts.strict;
-      router7.stack = [];
-      return router7;
+      Object.setPrototypeOf(router9, this);
+      router9.caseSensitive = opts.caseSensitive;
+      router9.mergeParams = opts.mergeParams;
+      router9.params = {};
+      router9.strict = opts.strict;
+      router9.stack = [];
+      return router9;
     }
-    Router7.prototype = function() {
+    Router9.prototype = function() {
     };
-    Router7.prototype.param = function param(name, fn) {
+    Router9.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20636,7 +20636,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router7.prototype.handle = function handle(req, res, callback) {
+    Router9.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20763,7 +20763,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router7.prototype.use = function use(handler) {
+    Router9.prototype.use = function use(handler) {
       let offset = 0;
       let path2 = "/";
       if (typeof handler !== "function") {
@@ -20796,7 +20796,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router7.prototype.route = function route(path2) {
+    Router9.prototype.route = function route(path2) {
       const route2 = new Route(path2);
       const layer = new Layer(path2, {
         sensitive: this.caseSensitive,
@@ -20811,7 +20811,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router7.prototype[method] = function(path2) {
+      Router9.prototype[method] = function(path2) {
         const route = this.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -20994,13 +20994,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router7 = require_router();
+    var Router9 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router7 = null;
+      var router9 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21009,13 +21009,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router7 === null) {
-            router7 = new Router7({
+          if (router9 === null) {
+            router9 = new Router9({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router7;
+          return router9;
         }
       });
     };
@@ -21086,15 +21086,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router7 = this.router;
+      var router9 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router7.use(path2, fn2);
+          return router9.use(path2, fn2);
         }
         debug(".use app under %s", path2);
         fn2.mountpath = path2;
         fn2.parent = this;
-        router7.use(path2, function mounted_app(req, res, next) {
+        router9.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -22302,17 +22302,17 @@ var require_content_disposition = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js"(exports) {
-    var crypto3 = __require("crypto");
+    var crypto4 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto3.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto4.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports.unsign = function(input, secret) {
       if ("string" != typeof input) throw new TypeError("Signed cookie string must be provided.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
       var tentativeValue = input.slice(0, input.lastIndexOf(".")), expectedInput = exports.sign(tentativeValue, secret), expectedBuffer = Buffer.from(expectedInput), inputBuffer = Buffer.from(input);
-      return expectedBuffer.length === inputBuffer.length && crypto3.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
+      return expectedBuffer.length === inputBuffer.length && crypto4.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
     };
   }
 });
@@ -23621,7 +23621,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router7 = require_router();
+    var Router9 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23643,8 +23643,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router7.Route;
-    exports.Router = Router7;
+    exports.Route = Router9.Route;
+    exports.Router = Router9;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -37661,7 +37661,7 @@ var require_form_data = __commonJS({
     var parseUrl = __require("url").parse;
     var fs = __require("fs");
     var Stream2 = __require("stream").Stream;
-    var crypto3 = __require("crypto");
+    var crypto4 = __require("crypto");
     var mime = require_mime_types2();
     var asynckit = require_asynckit();
     var setToStringTag = require_es_set_tostringtag();
@@ -37867,7 +37867,7 @@ var require_form_data = __commonJS({
       return Buffer.concat([dataBuffer, Buffer.from(this._lastBoundary())]);
     };
     FormData2.prototype._generateBoundary = function() {
-      this._boundary = "--------------------------" + crypto3.randomBytes(12).toString("hex");
+      this._boundary = "--------------------------" + crypto4.randomBytes(12).toString("hex");
     };
     FormData2.prototype.getLengthSync = function() {
       var knownLength = this._overheadLength + this._valueLength;
@@ -38504,7 +38504,7 @@ var require_axios = __commonJS({
   "../../node_modules/.pnpm/axios@1.16.0/node_modules/axios/dist/node/axios.cjs"(exports, module) {
     "use strict";
     var FormData$1 = require_form_data();
-    var crypto3 = __require("crypto");
+    var crypto4 = __require("crypto");
     var url = __require("url");
     var http = __require("http");
     var https = __require("https");
@@ -39630,7 +39630,7 @@ var require_axios = __commonJS({
         length
       } = alphabet;
       const randomValues = new Uint32Array(size);
-      crypto3.randomFillSync(randomValues);
+      crypto4.randomFillSync(randomValues);
       for (let i = 0; i < size; i++) {
         str2 += alphabet[randomValues[i] % length];
       }
@@ -48502,12 +48502,12 @@ var require_dist2 = __commonJS({
 });
 
 // src/app.ts
-var import_express7 = __toESM(require_express2(), 1);
+var import_express9 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_pino_http = __toESM(require_logger(), 1);
 
 // src/routes/index.ts
-var import_express6 = __toESM(require_express2(), 1);
+var import_express8 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -52805,13 +52805,13 @@ function __classPrivateFieldGet(receiver, state, kind, f) {
 
 // ../../node_modules/.pnpm/openai@6.35.0_ws@8.20.0_zod@4.3.6/node_modules/openai/internal/utils/uuid.mjs
 var uuid4 = function() {
-  const { crypto: crypto3 } = globalThis;
-  if (crypto3?.randomUUID) {
-    uuid4 = crypto3.randomUUID.bind(crypto3);
-    return crypto3.randomUUID();
+  const { crypto: crypto4 } = globalThis;
+  if (crypto4?.randomUUID) {
+    uuid4 = crypto4.randomUUID.bind(crypto4);
+    return crypto4.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto3 ? () => crypto3.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto4 ? () => crypto4.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
@@ -61363,7 +61363,8 @@ async function uploadToCloudinary(b64, mimeType, folder = "myaigirls", publicId)
       body: form
     });
     if (!resp.ok) {
-      logger.warn({ status: resp.status }, "Cloudinary upload failed");
+      const errBody = await resp.text().catch(() => "");
+      logger.warn({ status: resp.status, body: errBody, folder: safeFolder, publicId: safePublicId }, "Cloudinary upload failed");
       return null;
     }
     const data = await resp.json();
@@ -62110,17 +62111,223 @@ RULES:
 });
 var translate_default = router5;
 
-// src/routes/index.ts
+// src/routes/personas.ts
+var import_express6 = __toESM(require_express2(), 1);
 var router6 = (0, import_express6.Router)();
-router6.use(health_default);
-router6.use(chat_default);
-router6.use(image_default);
-router6.use(tts_default);
-router6.use(translate_default);
-var routes_default = router6;
+var BUILTIN_PERSONAS = [
+  { id: "priya", name: "\u0BAA\u0BCD\u0BB0\u0BBF\u0BAF\u0BBE" },
+  { id: "krish", name: "\u0B95\u0BBF\u0BB0\u0BB7\u0BCD" },
+  { id: "arya", name: "\u0B86\u0BB0\u0BCD\u0BAF\u0BBE \u0BAE\u0B9A\u0BCD\u0B9A\u0BBF" },
+  { id: "lakshmi", name: "\u0BB2\u0B9F\u0BCD\u0B9A\u0BC1\u0BAE\u0BBF \u0B85\u0B95\u0BCD\u0B95\u0BBE" },
+  { id: "ragu", name: "\u0BB0\u0B95\u0BC1 \u0B85\u0BA3\u0BCD\u0BA3\u0BBE" },
+  { id: "thatha", name: "\u0BA4\u0BBE\u0BA4\u0BCD\u0BA4\u0BBE" },
+  { id: "divya", name: "\u0BA4\u0BBF\u0BB5\u0BCD\u0BAF\u0BBE \u0BAE\u0BBF\u0BB8\u0BCD" },
+  { id: "mama", name: "\u0B83\u0BAA\u0BA9\u0BCD\u0BA9\u0BBF \u0BAE\u0BBE\u0BAE\u0BBE" },
+  { id: "ramya_wife", name: "\u0BAE\u0BA9\u0BC8\u0BB5\u0BBF \u0BB0\u0BBE\u0BAE\u0BCD\u0BAF\u0BBE" },
+  { id: "rani_mamiyar", name: "\u0BAE\u0BBE\u0BAE\u0BBF\u0BAF\u0BBE\u0BB0\u0BCD \u0BB0\u0BBE\u0BA3\u0BBF" },
+  { id: "janani_ex", name: "\u0BAE\u0BC1\u0BA9\u0BCD\u0BA9\u0BBE\u0BB3\u0BCD \u0B95\u0BBE\u0BA4\u0BB2\u0BBF \u0B9C\u0BA9\u0BA9\u0BBF" },
+  { id: "priya_marumakkal", name: "\u0BAE\u0BB0\u0BC1\u0BAE\u0B95\u0BB3\u0BCD \u0BAA\u0BBF\u0BB0\u0BBF\u0BAF\u0BBE" },
+  { id: "selvi_wife2", name: "\u0BAE\u0BA9\u0BC8\u0BB5\u0BBF \u0B9A\u0BC6\u0BB2\u0BCD\u0BB5\u0BBF" },
+  { id: "kayal_machinichi", name: "\u0BAE\u0B9A\u0BCD\u0B9A\u0BBF\u0BA9\u0BBF\u0B9A\u0BCD\u0B9A\u0BBF \u0B95\u0BAF\u0BB2\u0BCD" }
+];
+var customPersonas = /* @__PURE__ */ new Map();
+router6.get("/personas", (_req, res) => {
+  const custom = [...customPersonas.values()];
+  res.json({ personas: [...BUILTIN_PERSONAS, ...custom] });
+});
+router6.post("/personas", (req, res) => {
+  const { id, name } = req.body;
+  if (!id || !name || typeof id !== "string" || typeof name !== "string") {
+    res.status(400).json({ error: "id and name required" });
+    return;
+  }
+  if (BUILTIN_PERSONAS.some((p) => p.id === id)) {
+    res.json({ ok: true, skipped: "builtin" });
+    return;
+  }
+  customPersonas.set(id, { id, name, custom: true });
+  res.json({ ok: true });
+});
+router6.post("/personas/bulk", (req, res) => {
+  const list = req.body;
+  if (!Array.isArray(list)) {
+    res.status(400).json({ error: "array required" });
+    return;
+  }
+  for (const { id, name } of list) {
+    if (!id || !name) continue;
+    if (BUILTIN_PERSONAS.some((p) => p.id === id)) continue;
+    customPersonas.set(id, { id, name, custom: true });
+  }
+  res.json({ ok: true, count: list.length });
+});
+router6.delete("/personas/:id", (req, res) => {
+  const id = req.params["id"];
+  if (!id) {
+    res.status(400).json({ error: "id required" });
+    return;
+  }
+  customPersonas.delete(id);
+  res.json({ ok: true });
+});
+var personas_default = router6;
+
+// src/routes/backup.ts
+var import_express7 = __toESM(require_express2(), 1);
+import crypto3 from "node:crypto";
+var router7 = (0, import_express7.Router)();
+var BACKUP_PUBLIC_ID = "backups/tamilchat-backup";
+async function cloudinaryRawUpload(jsonStr, publicId = BACKUP_PUBLIC_ID) {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey4 = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey4 || !apiSecret) return null;
+  const timestamp = Math.floor(Date.now() / 1e3);
+  const toSign = `invalidate=true&overwrite=true&public_id=${publicId}&resource_type=raw&timestamp=${timestamp}${apiSecret}`;
+  const signature = crypto3.createHash("sha1").update(toSign).digest("hex");
+  const b64 = Buffer.from(jsonStr, "utf-8").toString("base64");
+  const dataUri = `data:text/plain;base64,${b64}`;
+  const form = new URLSearchParams();
+  form.append("file", dataUri);
+  form.append("public_id", publicId);
+  form.append("resource_type", "raw");
+  form.append("overwrite", "true");
+  form.append("invalidate", "true");
+  form.append("timestamp", String(timestamp));
+  form.append("api_key", apiKey4);
+  form.append("signature", signature);
+  const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`, {
+    method: "POST",
+    body: form
+  });
+  if (!r.ok) {
+    logger.warn({ status: r.status }, "Cloudinary raw upload failed");
+    return null;
+  }
+  const data = await r.json();
+  return data.secure_url ?? null;
+}
+async function cloudinaryRawFetch() {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey4 = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey4 || !apiSecret) return null;
+  const url = `https://api.cloudinary.com/v1_1/${cloudName}/resources/raw/upload/${BACKUP_PUBLIC_ID}`;
+  const creds = Buffer.from(`${apiKey4}:${apiSecret}`).toString("base64");
+  const r = await fetch(url, { headers: { Authorization: `Basic ${creds}` } });
+  if (!r.ok) return null;
+  const meta = await r.json();
+  if (!meta.secure_url) return null;
+  const fileRes = await fetch(meta.secure_url + `?t=${Date.now()}`);
+  if (!fileRes.ok) return null;
+  return fileRes.text();
+}
+router7.post("/backup/save", async (req, res) => {
+  const { data } = req.body;
+  if (!data || typeof data !== "string") {
+    res.status(400).json({ error: "data string required" });
+    return;
+  }
+  if (data.length > 20 * 1024 * 1024) {
+    res.status(413).json({ error: "Backup too large (>20MB)" });
+    return;
+  }
+  try {
+    const url = await cloudinaryRawUpload(data);
+    if (!url) {
+      res.status(503).json({ error: "Upload failed \u2014 check Cloudinary config" });
+      return;
+    }
+    logger.info({ size: data.length }, "Backup saved to Cloudinary");
+    res.json({ ok: true, url, savedAt: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    logger.error({ err }, "Backup save error");
+    res.status(500).json({ error: "Backup save failed" });
+  }
+});
+router7.get("/backup/restore", async (_req, res) => {
+  try {
+    const json = await cloudinaryRawFetch();
+    if (!json) {
+      res.status(404).json({ error: "No backup found" });
+      return;
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(json);
+    } catch {
+      res.status(422).json({ error: "Backup JSON invalid" });
+      return;
+    }
+    res.json({ ok: true, data: parsed });
+  } catch (err) {
+    logger.error({ err }, "Backup restore error");
+    res.status(500).json({ error: "Restore failed" });
+  }
+});
+async function cloudinaryListAll(cloudName, apiKey4, apiSecret, resourceType = "image") {
+  const creds = Buffer.from(`${apiKey4}:${apiSecret}`).toString("base64");
+  let all = [];
+  let nextCursor = null;
+  do {
+    const url = new URL(`https://api.cloudinary.com/v1_1/${cloudName}/resources/${resourceType}/upload`);
+    url.searchParams.set("max_results", "500");
+    if (nextCursor) url.searchParams.set("next_cursor", nextCursor);
+    const r = await fetch(url.toString(), { headers: { Authorization: `Basic ${creds}` } });
+    if (!r.ok) break;
+    const body = await r.json();
+    if (body.resources) all = all.concat(body.resources);
+    nextCursor = body.next_cursor ?? null;
+  } while (nextCursor);
+  return all;
+}
+router7.post("/backup/snapshot", async (_req, res) => {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey4 = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey4 || !apiSecret) {
+    res.status(503).json({ error: "Cloudinary config missing" });
+    return;
+  }
+  try {
+    const [images, raws] = await Promise.all([
+      cloudinaryListAll(cloudName, apiKey4, apiSecret, "image"),
+      cloudinaryListAll(cloudName, apiKey4, apiSecret, "raw")
+    ]);
+    const snapshot = {
+      snapshotAt: (/* @__PURE__ */ new Date()).toISOString(),
+      imageCount: images.length,
+      rawCount: raws.length,
+      images,
+      raws
+    };
+    const url = await cloudinaryRawUpload(JSON.stringify(snapshot), "backups/mycloud-structure-snapshot");
+    if (!url) {
+      res.status(503).json({ error: "Snapshot upload failed" });
+      return;
+    }
+    logger.info({ imageCount: images.length, rawCount: raws.length }, "Cloudinary snapshot saved");
+    res.json({ ok: true, snapshotAt: snapshot.snapshotAt, imageCount: images.length, rawCount: raws.length, url });
+  } catch (err) {
+    logger.error({ err }, "Snapshot error");
+    res.status(500).json({ error: "Snapshot failed" });
+  }
+});
+var backup_default = router7;
+
+// src/routes/index.ts
+var router8 = (0, import_express8.Router)();
+router8.use(health_default);
+router8.use(chat_default);
+router8.use(image_default);
+router8.use(tts_default);
+router8.use(translate_default);
+router8.use(personas_default);
+router8.use(backup_default);
+var routes_default = router8;
 
 // src/app.ts
-var app = (0, import_express7.default)();
+var app = (0, import_express9.default)();
 app.use(
   (0, import_pino_http.default)({
     logger,
@@ -62141,8 +62348,8 @@ app.use(
   })
 );
 app.use((0, import_cors.default)());
-app.use(import_express7.default.json({ limit: "30mb" }));
-app.use(import_express7.default.urlencoded({ extended: true, limit: "20mb" }));
+app.use(import_express9.default.json({ limit: "30mb" }));
+app.use(import_express9.default.urlencoded({ extended: true, limit: "20mb" }));
 app.use("/api", routes_default);
 app.get("/upload", (_req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
