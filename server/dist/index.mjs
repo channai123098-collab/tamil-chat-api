@@ -62185,10 +62185,9 @@ async function cloudinaryRawUpload(jsonStr, publicId = BACKUP_PUBLIC_ID) {
   const timestamp = Math.floor(Date.now() / 1e3);
   const toSign = `invalidate=true&overwrite=true&public_id=${publicId}&resource_type=raw&timestamp=${timestamp}${apiSecret}`;
   const signature = crypto3.createHash("sha1").update(toSign).digest("hex");
-  const b64 = Buffer.from(jsonStr, "utf-8").toString("base64");
-  const dataUri = `data:text/plain;base64,${b64}`;
-  const form = new URLSearchParams();
-  form.append("file", dataUri);
+  const blob = new Blob([jsonStr], { type: "text/plain" });
+  const form = new FormData();
+  form.append("file", blob, "backup.json");
   form.append("public_id", publicId);
   form.append("resource_type", "raw");
   form.append("overwrite", "true");
