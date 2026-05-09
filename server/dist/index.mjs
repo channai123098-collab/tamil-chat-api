@@ -61887,6 +61887,139 @@ app.use((0, import_cors.default)());
 app.use(import_express6.default.json({ limit: "30mb" }));
 app.use(import_express6.default.urlencoded({ extended: true, limit: "20mb" }));
 app.use("/api", routes_default);
+app.get("/upload", (_req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(`<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>\u{1F4F8} My AI Girls \u2013 Upload</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f0f;color:#fff;min-height:100vh;padding:0 0 40px}
+  .header{background:linear-gradient(135deg,#7c3aed,#a855f7);padding:20px 16px 16px;text-align:center}
+  .header h1{font-size:22px;font-weight:700}
+  .header p{font-size:13px;opacity:.8;margin-top:4px}
+  .body{padding:16px;max-width:480px;margin:0 auto}
+  .pick-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:18px;background:#7c3aed;color:#fff;border:none;border-radius:16px;font-size:17px;font-weight:600;cursor:pointer;margin:20px 0 0;-webkit-tap-highlight-color:transparent}
+  .pick-btn:active{opacity:.8}
+  .pick-btn input{display:none}
+  .hint{font-size:12px;color:#888;text-align:center;margin:10px 0 20px}
+  .progress{display:none;background:#1a1a1a;border-radius:12px;padding:16px;margin-top:16px}
+  .progress-bar-wrap{background:#333;border-radius:8px;height:8px;margin:10px 0}
+  .progress-bar{height:8px;border-radius:8px;background:linear-gradient(90deg,#7c3aed,#a855f7);width:0%;transition:width .3s}
+  .progress-text{font-size:13px;color:#aaa;text-align:center}
+  .results{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+  .result-card{background:#1a1a1a;border-radius:12px;overflow:hidden}
+  .result-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+  .result-card .info{padding:10px 12px;display:flex;gap:8px;align-items:center}
+  .result-card .status{font-size:20px}
+  .result-card .url-text{font-size:11px;color:#888;flex:1;word-break:break-all}
+  .copy-btn{background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .copy-btn:active{opacity:.7}
+  .error-card{background:#2a1a1a;border:1px solid #5a1a1a;border-radius:12px;padding:14px;color:#f87171;font-size:13px}
+  .success-count{background:#1a2a1a;border:1px solid #166534;border-radius:12px;padding:12px 16px;text-align:center;color:#86efac;font-size:14px;font-weight:600;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>\u{1F4F8} My AI Girls</h1>
+  <p>Phone Gallery \u2192 Cloudinary Upload</p>
+</div>
+<div class="body">
+  <label class="pick-btn">
+    <span>\u{1F4F7} Photos Select \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95</span>
+    <input type="file" accept="image/*" multiple id="filePick"/>
+  </label>
+  <p class="hint">Multiple images select \u0BAA\u0BA3\u0BCD\u0BA3\u0BB2\u0BBE\u0BAE\u0BCD \u2022 Cloudinary-\u0BB2\u0BCD auto save \u0B86\u0B95\u0BC1\u0BAE\u0BCD</p>
+
+  <div class="progress" id="progress">
+    <div class="progress-text" id="progressText">Uploading...</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+  </div>
+
+  <div class="results" id="results"></div>
+</div>
+
+<script>
+const API = '/api/image/upload-to-cloud';
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function copyText(text, btn) {
+  try { await navigator.clipboard.writeText(text); btn.textContent = '\u2713 Copied!'; setTimeout(() => btn.textContent = 'Copy URL', 1500); } catch {}
+}
+
+document.getElementById('filePick').addEventListener('change', async (e) => {
+  const files = [...e.target.files];
+  if (!files.length) return;
+
+  const prog = document.getElementById('progress');
+  const bar = document.getElementById('progressBar');
+  const txt = document.getElementById('progressText');
+  const results = document.getElementById('results');
+
+  prog.style.display = 'block';
+  results.innerHTML = '';
+  let done = 0;
+
+  for (const file of files) {
+    txt.textContent = \`Uploading \${done + 1} / \${files.length}...\`;
+    bar.style.width = (done / files.length * 100) + '%';
+    try {
+      const b64 = await toBase64(file);
+      const resp = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ b64_json: b64, mimeType: file.type || 'image/jpeg' })
+      });
+      const data = await resp.json();
+      if (data.url) {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.innerHTML = \`
+          <img src="\${data.url}" loading="lazy"/>
+          <div class="info">
+            <span class="status">\u2705</span>
+            <span class="url-text">\${data.url}</span>
+            <button class="copy-btn" onclick="copyText('\${data.url}', this)">Copy URL</button>
+          </div>\`;
+        results.prepend(card);
+      } else {
+        throw new Error(data.error || 'Upload failed');
+      }
+    } catch (err) {
+      const card = document.createElement('div');
+      card.className = 'error-card';
+      card.textContent = '\u274C ' + (file.name || 'Image') + ': ' + err.message;
+      results.prepend(card);
+    }
+    done++;
+  }
+
+  bar.style.width = '100%';
+  txt.textContent = \`\u2705 \${done} image\${done > 1 ? 's' : ''} done!\`;
+
+  const summary = document.createElement('div');
+  summary.className = 'success-count';
+  summary.textContent = \`\u{1F389} \${done} image\${done > 1 ? 's' : ''} Cloudinary-\u0BB2\u0BCD save \u0B86\u0B9A\u0BCD\u0B9A\u0BC1!\`;
+  results.prepend(summary);
+
+  e.target.value = '';
+});
+</script>
+</body>
+</html>`);
+});
 var app_default = app;
 
 // src/index.ts
