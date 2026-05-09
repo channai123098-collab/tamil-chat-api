@@ -61929,6 +61929,43 @@ router3.get("/image/cloudinary-list", async (req, res) => {
     res.status(502).json({ error: "Cloudinary list error" });
   }
 });
+router3.post("/image/cloudinary-delete", async (req, res) => {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey4 = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey4 || !apiSecret) {
+    res.status(503).json({ error: "Cloudinary not configured" });
+    return;
+  }
+  const publicId = (req.body?.publicId || "").trim();
+  if (!publicId) {
+    res.status(400).json({ error: "publicId required" });
+    return;
+  }
+  try {
+    const timestamp = Math.floor(Date.now() / 1e3);
+    const toSign = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+    const signature = crypto2.createHash("sha1").update(toSign).digest("hex");
+    const form = new URLSearchParams();
+    form.append("public_id", publicId);
+    form.append("timestamp", String(timestamp));
+    form.append("api_key", apiKey4);
+    form.append("signature", signature);
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+      method: "POST",
+      body: form
+    });
+    const data = await r.json();
+    if (data.result === "ok" || data.result === "not found") {
+      res.json({ ok: true, result: data.result });
+      return;
+    }
+    res.status(502).json({ error: "Delete failed", detail: data });
+  } catch (err) {
+    logger.warn({ err }, "Cloudinary destroy error");
+    res.status(502).json({ error: "Delete error" });
+  }
+});
 var image_default = router3;
 
 // src/routes/tts.ts
