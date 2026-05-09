@@ -61248,22 +61248,22 @@ async function generateWithNsfwFallback(primaryProvider, finalPrompt, isCouple, 
   aggregated.failures = providerFailures;
   throw aggregated;
 }
-async function uploadToCloudinary(b64, mimeType) {
+async function uploadToCloudinary(b64, mimeType, folder = "myaigirls") {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey4 = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
   if (!cloudName || !apiKey4 || !apiSecret) return null;
   try {
     const timestamp = Math.floor(Date.now() / 1e3).toString();
-    const folder = "myaigirls";
-    const paramsToSign = `folder=${folder}&timestamp=${timestamp}`;
+    const safeFolder = folder.trim().replace(/[^a-zA-Z0-9_\-/]/g, "") || "myaigirls";
+    const paramsToSign = `folder=${safeFolder}&timestamp=${timestamp}`;
     const signature = crypto2.createHash("sha1").update(paramsToSign + apiSecret).digest("hex");
     const form = new FormData();
     form.append("file", `data:${mimeType};base64,${b64}`);
     form.append("api_key", apiKey4);
     form.append("timestamp", timestamp);
     form.append("signature", signature);
-    form.append("folder", folder);
+    form.append("folder", safeFolder);
     const resp = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
       method: "POST",
       body: form
@@ -61798,12 +61798,12 @@ router3.post("/image/analyze-body", async (req, res) => {
   }
 });
 router3.post("/image/upload-to-cloud", async (req, res) => {
-  const { b64_json, mimeType } = req.body;
+  const { b64_json, mimeType, folder } = req.body;
   if (!b64_json || !mimeType) {
     res.status(400).json({ error: "b64_json and mimeType required" });
     return;
   }
-  const url = await uploadToCloudinary(b64_json, mimeType).catch(() => null);
+  const url = await uploadToCloudinary(b64_json, mimeType, folder).catch(() => null);
   if (!url) {
     res.status(503).json({ error: "Cloudinary upload failed \u2014 check CLOUDINARY_* env vars on server" });
     return;
@@ -61897,47 +61897,97 @@ app.get("/upload", (_req, res) => {
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>\u{1F4F8} My AI Girls \u2013 Upload</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f0f;color:#fff;min-height:100vh;padding:0 0 40px}
-  .header{background:linear-gradient(135deg,#7c3aed,#a855f7);padding:20px 16px 16px;text-align:center}
-  .header h1{font-size:22px;font-weight:700}
-  .header p{font-size:13px;opacity:.8;margin-top:4px}
-  .body{padding:16px;max-width:480px;margin:0 auto}
-  .pick-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:18px;background:#7c3aed;color:#fff;border:none;border-radius:16px;font-size:17px;font-weight:600;cursor:pointer;margin:20px 0 0;-webkit-tap-highlight-color:transparent}
-  .pick-btn:active{opacity:.8}
-  .pick-btn input{display:none}
-  .hint{font-size:12px;color:#888;text-align:center;margin:10px 0 20px}
-  .progress{display:none;background:#1a1a1a;border-radius:12px;padding:16px;margin-top:16px}
-  .progress-bar-wrap{background:#333;border-radius:8px;height:8px;margin:10px 0}
-  .progress-bar{height:8px;border-radius:8px;background:linear-gradient(90deg,#7c3aed,#a855f7);width:0%;transition:width .3s}
-  .progress-text{font-size:13px;color:#aaa;text-align:center}
-  .results{margin-top:16px;display:flex;flex-direction:column;gap:12px}
-  .result-card{background:#1a1a1a;border-radius:12px;overflow:hidden}
-  .result-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
-  .result-card .info{padding:10px 12px;display:flex;gap:8px;align-items:center}
-  .result-card .status{font-size:20px}
-  .result-card .url-text{font-size:11px;color:#888;flex:1;word-break:break-all}
-  .copy-btn{background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
-  .copy-btn:active{opacity:.7}
-  .error-card{background:#2a1a1a;border:1px solid #5a1a1a;border-radius:12px;padding:14px;color:#f87171;font-size:13px}
-  .success-count{background:#1a2a1a;border:1px solid #166534;border-radius:12px;padding:12px 16px;text-align:center;color:#86efac;font-size:14px;font-weight:600;margin-top:4px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f0f;color:#fff;min-height:100vh;padding:0 0 60px}
+.header{background:linear-gradient(135deg,#7c3aed,#a855f7);padding:20px 16px 18px;text-align:center}
+.header h1{font-size:22px;font-weight:700}
+.header p{font-size:13px;opacity:.8;margin-top:4px}
+.body{padding:14px;max-width:480px;margin:0 auto}
+
+/* \u2500\u2500 Folder Selector \u2500\u2500 */
+.section-label{font-size:11px;font-weight:600;color:#888;letter-spacing:.8px;text-transform:uppercase;margin:18px 0 8px}
+.folder-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.folder-chip{background:#1e1e2e;border:1.5px solid #333;color:#ccc;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.folder-chip.active{background:#7c3aed;border-color:#7c3aed;color:#fff;font-weight:600}
+.folder-chip:active{opacity:.7}
+.folder-custom-row{display:flex;gap:8px;margin-top:8px}
+.folder-input{flex:1;background:#1e1e2e;border:1.5px solid #333;border-radius:10px;padding:10px 14px;color:#fff;font-size:14px;outline:none}
+.folder-input:focus{border-color:#7c3aed}
+.folder-input::placeholder{color:#555}
+
+/* \u2500\u2500 Pick Buttons \u2500\u2500 */
+.btn-row{display:flex;gap:10px;margin-top:18px}
+.pick-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:16px 10px;border:none;border-radius:14px;font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;line-height:1.3}
+.pick-btn .icon{font-size:24px}
+.pick-btn input{display:none}
+.pick-btn.files{background:#7c3aed;color:#fff}
+.pick-btn.folder{background:#1e1e2e;border:1.5px solid #7c3aed;color:#a78bfa}
+.pick-btn:active{opacity:.75}
+.hint{font-size:11px;color:#666;text-align:center;margin:8px 0 0}
+
+/* \u2500\u2500 Progress \u2500\u2500 */
+.progress{display:none;background:#1a1a1a;border-radius:12px;padding:16px;margin-top:16px}
+.progress-bar-wrap{background:#333;border-radius:8px;height:8px;margin:10px 0 4px}
+.progress-bar{height:8px;border-radius:8px;background:linear-gradient(90deg,#7c3aed,#a855f7);width:0%;transition:width .25s}
+.progress-text{font-size:13px;color:#aaa;text-align:center}
+.progress-file{font-size:11px;color:#666;text-align:center;margin-top:4px;word-break:break-all}
+
+/* \u2500\u2500 Results \u2500\u2500 */
+.results{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.result-card{background:#1a1a1a;border-radius:12px;overflow:hidden}
+.result-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.result-card .info{padding:9px 12px;display:flex;gap:8px;align-items:center}
+.result-card .fname{font-size:11px;color:#aaa;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.copy-btn{background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.copy-btn:active{opacity:.7}
+.error-card{background:#2a1414;border:1px solid #5a1a1a;border-radius:12px;padding:13px;color:#f87171;font-size:12px}
+.success-count{background:#0f2a1a;border:1px solid #166534;border-radius:12px;padding:13px 16px;text-align:center;color:#86efac;font-size:15px;font-weight:700}
+.folder-badge{display:inline-block;background:#7c3aed22;border:1px solid #7c3aed55;color:#a78bfa;border-radius:6px;padding:2px 8px;font-size:11px;margin-top:4px}
 </style>
 </head>
 <body>
 <div class="header">
   <h1>\u{1F4F8} My AI Girls</h1>
-  <p>Phone Gallery \u2192 Cloudinary Upload</p>
+  <p>Phone \u2192 Cloudinary Upload</p>
 </div>
 <div class="body">
-  <label class="pick-btn">
-    <span>\u{1F4F7} Photos Select \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95</span>
-    <input type="file" accept="image/*" multiple id="filePick"/>
-  </label>
-  <p class="hint">Multiple images select \u0BAA\u0BA3\u0BCD\u0BA3\u0BB2\u0BBE\u0BAE\u0BCD \u2022 Cloudinary-\u0BB2\u0BCD auto save \u0B86\u0B95\u0BC1\u0BAE\u0BCD</p>
 
+  <!-- Cloudinary Folder Selector -->
+  <div class="section-label">\u2601\uFE0F Cloudinary Folder \u0BA4\u0BC7\u0BB0\u0BCD\u0BA8\u0BCD\u0BA4\u0BC6\u0B9F\u0BC1</div>
+  <div class="folder-row" id="chipRow">
+    <div class="folder-chip active" data-folder="myaigirls">myaigirls</div>
+    <div class="folder-chip" data-folder="pictures">Pictures</div>
+    <div class="folder-chip" data-folder="movies">Movies</div>
+    <div class="folder-chip" data-folder="recordings">Recordings</div>
+    <div class="folder-chip" data-folder="documents">Documents</div>
+    <div class="folder-chip" data-folder="music">Music</div>
+  </div>
+  <div class="folder-custom-row">
+    <input class="folder-input" id="customFolder" type="text" placeholder="Custom folder \u0BAA\u0BC6\u0BAF\u0BB0\u0BCD type \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1..."/>
+  </div>
+
+  <!-- Pick Buttons -->
+  <div class="btn-row">
+    <label class="pick-btn files">
+      <span class="icon">\u{1F5BC}\uFE0F</span>
+      <span>Files Select</span>
+      <span style="font-size:10px;opacity:.7">Multiple images</span>
+      <input type="file" accept="image/*" multiple id="filePick"/>
+    </label>
+    <label class="pick-btn folder">
+      <span class="icon">\u{1F4C1}</span>
+      <span>Folder Select</span>
+      <span style="font-size:10px;opacity:.7">Folder-\u0BB2\u0BCD \u0B89\u0BB3\u0BCD\u0BB3 \u0B8E\u0BB2\u0BCD\u0BB2\u0BBE\u0BAE\u0BCD</span>
+      <input type="file" accept="image/*" multiple webkitdirectory id="folderPick"/>
+    </label>
+  </div>
+  <p class="hint">Files: gallery-\u0BB2\u0BCD individual select \u2022 Folder: phone folder \u0BAE\u0BC1\u0BB4\u0BC1\u0BA4\u0BC1\u0BAE\u0BCD upload</p>
+
+  <!-- Progress -->
   <div class="progress" id="progress">
-    <div class="progress-text" id="progressText">Uploading...</div>
+    <div class="progress-text" id="progressText">\u0BA4\u0BAF\u0BBE\u0BB0\u0BBE\u0B95\u0BC1\u0BA4\u0BC1...</div>
     <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-file" id="progressFile"></div>
   </div>
 
   <div class="results" id="results"></div>
@@ -61945,6 +61995,34 @@ app.get("/upload", (_req, res) => {
 
 <script>
 const API = '/api/image/upload-to-cloud';
+let selectedFolder = 'myaigirls';
+
+// Chip selection
+document.querySelectorAll('.folder-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.folder-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    selectedFolder = chip.dataset.folder;
+    document.getElementById('customFolder').value = '';
+  });
+});
+
+document.getElementById('customFolder').addEventListener('input', e => {
+  const v = e.target.value.trim();
+  if (v) {
+    document.querySelectorAll('.folder-chip').forEach(c => c.classList.remove('active'));
+    selectedFolder = v;
+  } else {
+    // revert to active chip
+    const active = document.querySelector('.folder-chip.active');
+    selectedFolder = active ? active.dataset.folder : 'myaigirls';
+  }
+});
+
+function getFolder() {
+  const custom = document.getElementById('customFolder').value.trim();
+  return custom || selectedFolder || 'myaigirls';
+}
 
 function toBase64(file) {
   return new Promise((res, rej) => {
@@ -61956,43 +62034,51 @@ function toBase64(file) {
 }
 
 async function copyText(text, btn) {
-  try { await navigator.clipboard.writeText(text); btn.textContent = '\u2713 Copied!'; setTimeout(() => btn.textContent = 'Copy URL', 1500); } catch {}
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = '\u2713 Copied!';
+    setTimeout(() => btn.textContent = 'Copy URL', 1600);
+  } catch {}
 }
 
-document.getElementById('filePick').addEventListener('change', async (e) => {
-  const files = [...e.target.files];
+async function uploadFiles(files) {
   if (!files.length) return;
+  const folder = getFolder();
 
   const prog = document.getElementById('progress');
   const bar = document.getElementById('progressBar');
   const txt = document.getElementById('progressText');
+  const fileTxt = document.getElementById('progressFile');
   const results = document.getElementById('results');
 
   prog.style.display = 'block';
   results.innerHTML = '';
-  let done = 0;
+  let done = 0, success = 0;
 
   for (const file of files) {
-    txt.textContent = \`Uploading \${done + 1} / \${files.length}...\`;
+    txt.textContent = \`Uploading \${done + 1} / \${files.length}\`;
+    fileTxt.textContent = file.name || '';
     bar.style.width = (done / files.length * 100) + '%';
     try {
       const b64 = await toBase64(file);
       const resp = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ b64_json: b64, mimeType: file.type || 'image/jpeg' })
+        body: JSON.stringify({ b64_json: b64, mimeType: file.type || 'image/jpeg', folder })
       });
       const data = await resp.json();
       if (data.url) {
+        success++;
+        const safeUrl = data.url.replace(/'/g, '');
         const card = document.createElement('div');
         card.className = 'result-card';
-        card.innerHTML = \`
-          <img src="\${data.url}" loading="lazy"/>
-          <div class="info">
-            <span class="status">\u2705</span>
-            <span class="url-text">\${data.url}</span>
-            <button class="copy-btn" onclick="copyText('\${data.url}', this)">Copy URL</button>
-          </div>\`;
+        card.innerHTML =
+          '<img src="' + safeUrl + '" loading="lazy"/>' +
+          '<div class="info">' +
+            '<span class="fname">' + (file.webkitRelativePath || file.name || 'image') + '</span>' +
+            '<button class="copy-btn" data-url="' + safeUrl + '">Copy URL</button>' +
+          '</div>';
+        card.querySelector('.copy-btn').addEventListener('click', function(){ copyText(this.dataset.url, this); });
         results.prepend(card);
       } else {
         throw new Error(data.error || 'Upload failed');
@@ -62007,13 +62093,29 @@ document.getElementById('filePick').addEventListener('change', async (e) => {
   }
 
   bar.style.width = '100%';
-  txt.textContent = \`\u2705 \${done} image\${done > 1 ? 's' : ''} done!\`;
+  fileTxt.textContent = '';
+  txt.textContent = '\u2705 \u0B8E\u0BB2\u0BCD\u0BB2\u0BBE\u0BAE\u0BCD \u0BAE\u0BC1\u0B9F\u0BBF\u0B9E\u0BCD\u0B9A\u0BC1\u0BA4\u0BC1!';
 
   const summary = document.createElement('div');
   summary.className = 'success-count';
-  summary.textContent = \`\u{1F389} \${done} image\${done > 1 ? 's' : ''} Cloudinary-\u0BB2\u0BCD save \u0B86\u0B9A\u0BCD\u0B9A\u0BC1!\`;
+  summary.innerHTML =
+    '\u{1F389} ' + success + ' / ' + done + ' images uploaded!<br/>' +
+    '<span class="folder-badge">\u{1F4C1} ' + folder + '</span>';
   results.prepend(summary);
+}
 
+document.getElementById('filePick').addEventListener('change', async e => {
+  await uploadFiles([...e.target.files]);
+  e.target.value = '';
+});
+
+document.getElementById('folderPick').addEventListener('change', async e => {
+  const imgs = [...e.target.files].filter(f => f.type.startsWith('image/'));
+  if (!imgs.length) {
+    alert('\u0B87\u0BA8\u0BCD\u0BA4 folder-\u0BB2\u0BCD images \u0B87\u0BB2\u0BCD\u0BB2\u0BC8!');
+    e.target.value = ''; return;
+  }
+  await uploadFiles(imgs);
   e.target.value = '';
 });
 </script>
