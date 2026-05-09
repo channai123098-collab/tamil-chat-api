@@ -62200,8 +62200,9 @@ async function cloudinaryRawUpload(jsonStr, publicId = BACKUP_PUBLIC_ID) {
     body: form
   });
   if (!r.ok) {
-    logger.warn({ status: r.status }, "Cloudinary raw upload failed");
-    return null;
+    const errBody = await r.text().catch(() => "");
+    logger.warn({ status: r.status, body: errBody }, "Cloudinary raw upload failed");
+    throw new Error(`Cloudinary ${r.status}: ${errBody}`);
   }
   const data = await r.json();
   return data.secure_url ?? null;
@@ -62233,15 +62234,12 @@ router7.post("/backup/save", async (req, res) => {
   }
   try {
     const url = await cloudinaryRawUpload(data);
-    if (!url) {
-      res.status(503).json({ error: "Upload failed \u2014 check Cloudinary config" });
-      return;
-    }
     logger.info({ size: data.length }, "Backup saved to Cloudinary");
     res.json({ ok: true, url, savedAt: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
     logger.error({ err }, "Backup save error");
-    res.status(500).json({ error: "Backup save failed" });
+    res.status(500).json({ error: msg });
   }
 });
 router7.get("/backup/restore", async (_req, res) => {
@@ -62301,15 +62299,12 @@ router7.post("/backup/snapshot", async (_req, res) => {
       raws
     };
     const url = await cloudinaryRawUpload(JSON.stringify(snapshot), "backups/mycloud-structure-snapshot");
-    if (!url) {
-      res.status(503).json({ error: "Snapshot upload failed" });
-      return;
-    }
     logger.info({ imageCount: images.length, rawCount: raws.length }, "Cloudinary snapshot saved");
     res.json({ ok: true, snapshotAt: snapshot.snapshotAt, imageCount: images.length, rawCount: raws.length, url });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
     logger.error({ err }, "Snapshot error");
-    res.status(500).json({ error: "Snapshot failed" });
+    res.status(500).json({ error: msg });
   }
 });
 var backup_default = router7;
