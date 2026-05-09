@@ -61810,6 +61810,36 @@ router3.post("/image/upload-to-cloud", async (req, res) => {
   }
   res.json({ url });
 });
+router3.get("/image/cloudinary-list", async (req, res) => {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey4 = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey4 || !apiSecret) {
+    res.status(503).json({ error: "Cloudinary not configured" });
+    return;
+  }
+  const folder = (req.query.folder || "myaigirls").replace(/[^a-zA-Z0-9_\-/]/g, "");
+  const maxResults = Math.min(Number(req.query.max) || 100, 500);
+  try {
+    const creds = Buffer.from(`${apiKey4}:${apiSecret}`).toString("base64");
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image?prefix=${encodeURIComponent(folder + "/")}&type=upload&max_results=${maxResults}`;
+    const r = await fetch(url, { headers: { Authorization: `Basic ${creds}` } });
+    if (!r.ok) {
+      res.status(502).json({ error: "Cloudinary list failed" });
+      return;
+    }
+    const data = await r.json();
+    const images = (data.resources ?? []).map((x) => ({
+      url: x.secure_url,
+      timestamp: new Date(x.created_at).getTime(),
+      publicId: x.public_id
+    }));
+    res.json({ images });
+  } catch (err) {
+    logger.warn({ err }, "Cloudinary list error");
+    res.status(502).json({ error: "Cloudinary list error" });
+  }
+});
 var image_default = router3;
 
 // src/routes/tts.ts
