@@ -61983,6 +61983,118 @@ router3.post("/image/cloudinary-delete", async (req, res) => {
     res.status(502).json({ error: "Delete error" });
   }
 });
+router3.post("/image/vision-generate", async (req, res) => {
+  const { imageBase64, stableHordeKey } = req.body;
+  if (!imageBase64 || typeof imageBase64 !== "string") {
+    res.status(400).json({ error: "imageBase64 required" });
+    return;
+  }
+  try {
+    let prompt = "beautiful Indian woman, sensual, realistic, NSFW, uncensored, unfiltered, high detail, 8k";
+    try {
+      const visionResp = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: [{
+          role: "user",
+          parts: [
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: imageBase64
+              }
+            },
+            {
+              text: "Describe this photo in a Stable Diffusion image generation prompt. Focus on: body type, skin tone, hair, facial features, clothing/pose, setting. Output only the prompt keywords, comma-separated, in English. Add at end: realistic, NSFW, uncensored, unfiltered, highly detailed, 8k photography"
+            }
+          ]
+        }]
+      });
+      const visionText = visionResp.text ?? "";
+      if (visionText.trim().length > 20) prompt = visionText.trim();
+      logger.info({ prompt: prompt.slice(0, 100) }, "Vision prompt from Gemini");
+    } catch (vErr) {
+      logger.warn({ vErr }, "Gemini vision failed, using default NSFW prompt");
+    }
+    const hordeKey = stableHordeKey || process.env.STABLEHORDE_API_KEY || "0000000000";
+    const seed = Math.floor(Math.random() * 2147483647);
+    const negPrompt = "ugly, blurry, watermark, text, logo, cropped, low quality, bad anatomy, deformed";
+    const fullPrompt = `${prompt} ### ${negPrompt}`;
+    const createResp = await fetch("https://aihorde.net/api/v2/generate/async", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: hordeKey,
+        "Client-Agent": "TamilChat:1.0:replit"
+      },
+      body: JSON.stringify({
+        prompt: fullPrompt,
+        params: {
+          sampler_name: "k_dpmpp_2m",
+          cfg_scale: 7.5,
+          seed: String(seed),
+          height: 1024,
+          width: 768,
+          steps: 30,
+          n: 1,
+          karras: true,
+          clip_skip: 2
+        },
+        nsfw: true,
+        censor_nsfw: false,
+        models: ["Pony Diffusion XL"],
+        r2: true,
+        shared: true
+      }),
+      signal: AbortSignal.timeout(3e4)
+    });
+    if (!createResp.ok) {
+      const errText = await createResp.text();
+      res.status(502).json({ error: `Stable Horde create error: ${errText.slice(0, 200)}` });
+      return;
+    }
+    const { id: jobId } = await createResp.json();
+    let b64 = "";
+    for (let i = 0; i < 60; i++) {
+      await new Promise((r) => setTimeout(r, 3e3));
+      const checkResp = await fetch(`https://aihorde.net/api/v2/generate/check/${jobId}`, {
+        headers: { apikey: hordeKey, "Client-Agent": "TamilChat:1.0:replit" },
+        signal: AbortSignal.timeout(1e4)
+      });
+      if (!checkResp.ok) continue;
+      const check = await checkResp.json();
+      if (check.faulted) {
+        res.status(502).json({ error: "Stable Horde generation faulted" });
+        return;
+      }
+      if (check.done) {
+        const statusResp = await fetch(`https://aihorde.net/api/v2/generate/status/${jobId}`, {
+          headers: { apikey: hordeKey, "Client-Agent": "TamilChat:1.0:replit" },
+          signal: AbortSignal.timeout(15e3)
+        });
+        const status = await statusResp.json();
+        const gen = status.generations?.[0];
+        if (!gen) break;
+        if (gen.r2) {
+          const r2Resp = await fetch(gen.img, { signal: AbortSignal.timeout(3e4) });
+          const buf = await r2Resp.arrayBuffer();
+          b64 = Buffer.from(buf).toString("base64");
+        } else {
+          b64 = gen.img.replace(/^data:image\/\w+;base64,/, "");
+        }
+        break;
+      }
+    }
+    if (!b64) {
+      res.status(504).json({ error: "Stable Horde timeout \u2014 try again" });
+      return;
+    }
+    res.json({ b64_json: b64, mimeType: "image/webp", usedPrompt: prompt });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error({ err }, "Vision generate error");
+    res.status(500).json({ error: msg });
+  }
+});
 var image_default = router3;
 
 // src/routes/tts.ts
