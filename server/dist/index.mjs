@@ -62533,7 +62533,7 @@ function notePublicId(deviceKey, personaId) {
 async function uploadNote(text, publicId, creds) {
   const { cloudName, apiKey: apiKey4, apiSecret } = creds;
   const timestamp = Math.floor(Date.now() / 1e3);
-  const toSign = `invalidate=true&overwrite=true&public_id=${publicId}&resource_type=raw&timestamp=${timestamp}${apiSecret}`;
+  const toSign = `invalidate=true&overwrite=true&public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
   const signature = crypto4.createHash("sha1").update(toSign).digest("hex");
   const blob = new Blob([text], { type: "text/plain; charset=utf-8" });
   const form = new FormData();
