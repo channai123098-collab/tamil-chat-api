@@ -18880,14 +18880,14 @@ var require_etag = __commonJS({
   "../../node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports, module) {
     "use strict";
     module.exports = etag;
-    var crypto4 = __require("crypto");
+    var crypto5 = __require("crypto");
     var Stats = __require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash = crypto4.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash = crypto5.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash + '"';
     }
@@ -20596,27 +20596,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router9;
+    module.exports = Router10;
     module.exports.Route = Route;
-    function Router9(options) {
-      if (!(this instanceof Router9)) {
-        return new Router9(options);
+    function Router10(options) {
+      if (!(this instanceof Router10)) {
+        return new Router10(options);
       }
       const opts = options || {};
-      function router9(req, res, next) {
-        router9.handle(req, res, next);
+      function router10(req, res, next) {
+        router10.handle(req, res, next);
       }
-      Object.setPrototypeOf(router9, this);
-      router9.caseSensitive = opts.caseSensitive;
-      router9.mergeParams = opts.mergeParams;
-      router9.params = {};
-      router9.strict = opts.strict;
-      router9.stack = [];
-      return router9;
+      Object.setPrototypeOf(router10, this);
+      router10.caseSensitive = opts.caseSensitive;
+      router10.mergeParams = opts.mergeParams;
+      router10.params = {};
+      router10.strict = opts.strict;
+      router10.stack = [];
+      return router10;
     }
-    Router9.prototype = function() {
+    Router10.prototype = function() {
     };
-    Router9.prototype.param = function param(name, fn) {
+    Router10.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20636,7 +20636,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router9.prototype.handle = function handle(req, res, callback) {
+    Router10.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20763,7 +20763,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router9.prototype.use = function use(handler) {
+    Router10.prototype.use = function use(handler) {
       let offset = 0;
       let path2 = "/";
       if (typeof handler !== "function") {
@@ -20796,7 +20796,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router9.prototype.route = function route(path2) {
+    Router10.prototype.route = function route(path2) {
       const route2 = new Route(path2);
       const layer = new Layer(path2, {
         sensitive: this.caseSensitive,
@@ -20811,7 +20811,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router9.prototype[method] = function(path2) {
+      Router10.prototype[method] = function(path2) {
         const route = this.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -20994,13 +20994,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router9 = require_router();
+    var Router10 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router9 = null;
+      var router10 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21009,13 +21009,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router9 === null) {
-            router9 = new Router9({
+          if (router10 === null) {
+            router10 = new Router10({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router9;
+          return router10;
         }
       });
     };
@@ -21086,15 +21086,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router9 = this.router;
+      var router10 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router9.use(path2, fn2);
+          return router10.use(path2, fn2);
         }
         debug(".use app under %s", path2);
         fn2.mountpath = path2;
         fn2.parent = this;
-        router9.use(path2, function mounted_app(req, res, next) {
+        router10.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -22302,17 +22302,17 @@ var require_content_disposition = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js"(exports) {
-    var crypto4 = __require("crypto");
+    var crypto5 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto4.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto5.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports.unsign = function(input, secret) {
       if ("string" != typeof input) throw new TypeError("Signed cookie string must be provided.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
       var tentativeValue = input.slice(0, input.lastIndexOf(".")), expectedInput = exports.sign(tentativeValue, secret), expectedBuffer = Buffer.from(expectedInput), inputBuffer = Buffer.from(input);
-      return expectedBuffer.length === inputBuffer.length && crypto4.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
+      return expectedBuffer.length === inputBuffer.length && crypto5.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
     };
   }
 });
@@ -23621,7 +23621,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router9 = require_router();
+    var Router10 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23643,8 +23643,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router9.Route;
-    exports.Router = Router9;
+    exports.Route = Router10.Route;
+    exports.Router = Router10;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -37661,7 +37661,7 @@ var require_form_data = __commonJS({
     var parseUrl = __require("url").parse;
     var fs = __require("fs");
     var Stream2 = __require("stream").Stream;
-    var crypto4 = __require("crypto");
+    var crypto5 = __require("crypto");
     var mime = require_mime_types2();
     var asynckit = require_asynckit();
     var setToStringTag = require_es_set_tostringtag();
@@ -37867,7 +37867,7 @@ var require_form_data = __commonJS({
       return Buffer.concat([dataBuffer, Buffer.from(this._lastBoundary())]);
     };
     FormData2.prototype._generateBoundary = function() {
-      this._boundary = "--------------------------" + crypto4.randomBytes(12).toString("hex");
+      this._boundary = "--------------------------" + crypto5.randomBytes(12).toString("hex");
     };
     FormData2.prototype.getLengthSync = function() {
       var knownLength = this._overheadLength + this._valueLength;
@@ -38504,7 +38504,7 @@ var require_axios = __commonJS({
   "../../node_modules/.pnpm/axios@1.16.0/node_modules/axios/dist/node/axios.cjs"(exports, module) {
     "use strict";
     var FormData$1 = require_form_data();
-    var crypto4 = __require("crypto");
+    var crypto5 = __require("crypto");
     var url = __require("url");
     var http = __require("http");
     var https = __require("https");
@@ -39630,7 +39630,7 @@ var require_axios = __commonJS({
         length
       } = alphabet;
       const randomValues = new Uint32Array(size);
-      crypto4.randomFillSync(randomValues);
+      crypto5.randomFillSync(randomValues);
       for (let i = 0; i < size; i++) {
         str2 += alphabet[randomValues[i] % length];
       }
@@ -48502,12 +48502,12 @@ var require_dist2 = __commonJS({
 });
 
 // src/app.ts
-var import_express9 = __toESM(require_express2(), 1);
+var import_express10 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_pino_http = __toESM(require_logger(), 1);
 
 // src/routes/index.ts
-var import_express8 = __toESM(require_express2(), 1);
+var import_express9 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -52806,13 +52806,13 @@ function __classPrivateFieldGet(receiver, state, kind, f) {
 
 // ../../node_modules/.pnpm/openai@6.35.0_ws@8.20.0_zod@4.3.6/node_modules/openai/internal/utils/uuid.mjs
 var uuid4 = function() {
-  const { crypto: crypto4 } = globalThis;
-  if (crypto4?.randomUUID) {
-    uuid4 = crypto4.randomUUID.bind(crypto4);
-    return crypto4.randomUUID();
+  const { crypto: crypto5 } = globalThis;
+  if (crypto5?.randomUUID) {
+    uuid4 = crypto5.randomUUID.bind(crypto5);
+    return crypto5.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto4 ? () => crypto4.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto5 ? () => crypto5.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
@@ -62507,19 +62507,122 @@ router7.post("/backup/snapshot", async (_req, res) => {
 });
 var backup_default = router7;
 
-// src/routes/index.ts
+// src/routes/notes.ts
+var import_express8 = __toESM(require_express2(), 1);
+import crypto4 from "node:crypto";
 var router8 = (0, import_express8.Router)();
-router8.use(health_default);
-router8.use(chat_default);
-router8.use(image_default);
-router8.use(tts_default);
-router8.use(translate_default);
-router8.use(personas_default);
-router8.use(backup_default);
-var routes_default = router8;
+function cloudCreds() {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey4 = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey4 || !apiSecret) return null;
+  return { cloudName, apiKey: apiKey4, apiSecret };
+}
+function notePublicId(deviceKey, personaId) {
+  const safe = personaId.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 40);
+  const dk = deviceKey.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32);
+  return `notes/${dk}_${safe}`;
+}
+async function uploadNote(text, publicId, creds) {
+  const { cloudName, apiKey: apiKey4, apiSecret } = creds;
+  const timestamp = Math.floor(Date.now() / 1e3);
+  const toSign = `invalidate=true&overwrite=true&public_id=${publicId}&resource_type=raw&timestamp=${timestamp}${apiSecret}`;
+  const signature = crypto4.createHash("sha1").update(toSign).digest("hex");
+  const blob = new Blob([text], { type: "text/plain; charset=utf-8" });
+  const form = new FormData();
+  form.append("file", blob, "note.txt");
+  form.append("public_id", publicId);
+  form.append("resource_type", "raw");
+  form.append("overwrite", "true");
+  form.append("invalidate", "true");
+  form.append("timestamp", String(timestamp));
+  form.append("api_key", apiKey4);
+  form.append("signature", signature);
+  const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`, { method: "POST", body: form });
+  if (!r.ok) {
+    const body = await r.text().catch(() => "");
+    throw new Error(`Cloudinary upload failed ${r.status}: ${body}`);
+  }
+  const data = await r.json();
+  return data.secure_url ?? "";
+}
+async function downloadNote(publicId, creds) {
+  const { cloudName, apiKey: apiKey4, apiSecret } = creds;
+  const encoded = encodeURIComponent(publicId);
+  const metaUrl = `https://api.cloudinary.com/v1_1/${cloudName}/resources/raw/upload/${encoded}`;
+  const auth = Buffer.from(`${apiKey4}:${apiSecret}`).toString("base64");
+  const metaR = await fetch(metaUrl, { headers: { Authorization: `Basic ${auth}` } });
+  if (!metaR.ok) return null;
+  const meta = await metaR.json();
+  if (!meta.secure_url) return null;
+  const fileR = await fetch(`${meta.secure_url}?t=${Date.now()}`);
+  if (!fileR.ok) return null;
+  return fileR.text();
+}
+router8.post("/notes/save", async (req, res) => {
+  const { deviceKey, personaId, text } = req.body;
+  if (!deviceKey || !personaId || typeof text !== "string") {
+    res.status(400).json({ error: "deviceKey, personaId, text required" });
+    return;
+  }
+  const creds = cloudCreds();
+  if (!creds) {
+    res.status(503).json({ error: "Cloud storage not configured" });
+    return;
+  }
+  try {
+    const pubId = notePublicId(deviceKey, personaId);
+    const url = await uploadNote(text, pubId, creds);
+    logger.info({ personaId, len: text.length }, "Note saved to cloud");
+    res.json({ ok: true, url, savedAt: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error({ err }, "Note save error");
+    res.status(500).json({ error: msg });
+  }
+});
+router8.get("/notes/load", async (req, res) => {
+  const { deviceKey, personaId } = req.query;
+  if (!deviceKey || !personaId) {
+    res.status(400).json({ error: "deviceKey and personaId required" });
+    return;
+  }
+  const creds = cloudCreds();
+  if (!creds) {
+    res.status(503).json({ error: "Cloud storage not configured" });
+    return;
+  }
+  try {
+    const pubId = notePublicId(deviceKey, personaId);
+    const text = await downloadNote(pubId, creds);
+    if (text === null) {
+      res.status(404).json({ error: "No cloud note found" });
+      return;
+    }
+    logger.info({ personaId }, "Note loaded from cloud");
+    res.json({ ok: true, text });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error({ err }, "Note load error");
+    res.status(500).json({ error: msg });
+  }
+});
+var notes_default = router8;
+
+// src/routes/index.ts
+var router9 = (0, import_express9.Router)();
+router9.use(health_default);
+router9.use(chat_default);
+router9.use(image_default);
+router9.use(tts_default);
+router9.use(translate_default);
+router9.use(personas_default);
+router9.use(backup_default);
+router9.use(notes_default);
+var routes_default = router9;
 
 // src/app.ts
-var app = (0, import_express9.default)();
+var app = (0, import_express10.default)();
 app.use(
   (0, import_pino_http.default)({
     logger,
@@ -62540,8 +62643,8 @@ app.use(
   })
 );
 app.use((0, import_cors.default)());
-app.use(import_express9.default.json({ limit: "30mb" }));
-app.use(import_express9.default.urlencoded({ extended: true, limit: "20mb" }));
+app.use(import_express10.default.json({ limit: "30mb" }));
+app.use(import_express10.default.urlencoded({ extended: true, limit: "20mb" }));
 app.use("/api", routes_default);
 app.get("/upload", (_req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
