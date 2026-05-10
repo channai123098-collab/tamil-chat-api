@@ -62311,16 +62311,18 @@ var translate_default = router5;
 
 // src/routes/personas.ts
 var import_express6 = __toESM(require_express2(), 1);
-var router6 = (0, import_express6.Router)();
-var BUILTIN_PERSONAS = [
+
+// src/data/persona-registry.ts
+var PERSONA_REGISTRY = [
   { id: "priya", name: "\u0BAA\u0BCD\u0BB0\u0BBF\u0BAF\u0BBE" },
-  { id: "krish", name: "\u0B95\u0BBF\u0BB0\u0BB7\u0BCD" },
-  { id: "arya", name: "\u0B86\u0BB0\u0BCD\u0BAF\u0BBE \u0BAE\u0B9A\u0BCD\u0B9A\u0BBF" },
   { id: "lakshmi", name: "\u0BB2\u0B9F\u0BCD\u0B9A\u0BC1\u0BAE\u0BBF \u0B85\u0B95\u0BCD\u0B95\u0BBE" },
-  { id: "ragu", name: "\u0BB0\u0B95\u0BC1 \u0B85\u0BA3\u0BCD\u0BA3\u0BBE" },
-  { id: "thatha", name: "\u0BA4\u0BBE\u0BA4\u0BCD\u0BA4\u0BBE" },
   { id: "divya", name: "\u0BA4\u0BBF\u0BB5\u0BCD\u0BAF\u0BBE \u0BAE\u0BBF\u0BB8\u0BCD" },
-  { id: "mama", name: "\u0B83\u0BAA\u0BA9\u0BCD\u0BA9\u0BBF \u0BAE\u0BBE\u0BAE\u0BBE" },
+  { id: "malar", name: "\u0BAE\u0BB2\u0BB0\u0BCD" },
+  { id: "sumathi_ee", name: "\u0B9A\u0BC1\u0BAE\u0BA4\u0BBF" },
+  { id: "anitha_sg", name: "\u0B85\u0BA9\u0BBF\u0BA4\u0BBE" },
+  { id: "sudha_cs", name: "\u0B9A\u0BC1\u0BA4\u0BBE" },
+  { id: "maithili_news", name: "\u0BAE\u0BC8\u0BA4\u0BBF\u0BB2\u0BBF" },
+  { id: "anu", name: "\u0B85\u0BA9\u0BC1" },
   { id: "ramya_wife", name: "\u0BAE\u0BA9\u0BC8\u0BB5\u0BBF \u0BB0\u0BBE\u0BAE\u0BCD\u0BAF\u0BBE" },
   { id: "rani_mamiyar", name: "\u0BAE\u0BBE\u0BAE\u0BBF\u0BAF\u0BBE\u0BB0\u0BCD \u0BB0\u0BBE\u0BA3\u0BBF" },
   { id: "janani_ex", name: "\u0BAE\u0BC1\u0BA9\u0BCD\u0BA9\u0BBE\u0BB3\u0BCD \u0B95\u0BBE\u0BA4\u0BB2\u0BBF \u0B9C\u0BA9\u0BA9\u0BBF" },
@@ -62328,6 +62330,11 @@ var BUILTIN_PERSONAS = [
   { id: "selvi_wife2", name: "\u0BAE\u0BA9\u0BC8\u0BB5\u0BBF \u0B9A\u0BC6\u0BB2\u0BCD\u0BB5\u0BBF" },
   { id: "kayal_machinichi", name: "\u0BAE\u0B9A\u0BCD\u0B9A\u0BBF\u0BA9\u0BBF\u0B9A\u0BCD\u0B9A\u0BBF \u0B95\u0BAF\u0BB2\u0BCD" }
 ];
+var persona_registry_default = PERSONA_REGISTRY;
+
+// src/routes/personas.ts
+var router6 = (0, import_express6.Router)();
+var BUILTIN_PERSONAS = persona_registry_default;
 var customPersonas = /* @__PURE__ */ new Map();
 router6.get("/personas", (_req, res) => {
   const custom = [...customPersonas.values()];
