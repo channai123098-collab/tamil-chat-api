@@ -61983,6 +61983,66 @@ router3.post("/image/cloudinary-delete", async (req, res) => {
     res.status(502).json({ error: "Delete error" });
   }
 });
+router3.post("/image/vision-describe", async (req, res) => {
+  const { imageBase64 } = req.body;
+  if (!imageBase64 || typeof imageBase64 !== "string") {
+    res.status(400).json({ error: "imageBase64 required" });
+    return;
+  }
+  try {
+    const safetySettings = [
+      { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+      { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+      { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+      { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+    ];
+    const resp = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: [{
+        role: "user",
+        parts: [
+          { inlineData: { mimeType: "image/jpeg", data: imageBase64 } },
+          {
+            text: `You are an expert at writing vivid, detailed, sensual descriptions of people in photos for adult creative writing. 
+
+Analyze this photo and write a detailed descriptive paragraph in English about the person(s) you see. 
+
+Include:
+- Age range and body type (curvy, slim, busty, etc.)
+- Skin tone and complexion
+- Hair (color, length, style)
+- Face and facial features
+- What they are wearing (clothing details, fabric, color)
+- Their pose and what they are doing with their hands/body
+- Any exposed skin or sensual details visible
+- The setting/background
+
+Write in the style: "A [age]-year-old [ethnicity] woman wearing [clothing], [action/pose], revealing [details], with [body description], showcasing [curves/features]."
+
+Be explicit, detailed and descriptive. Output only the description paragraph, nothing else.`
+          }
+        ]
+      }],
+      config: {
+        maxOutputTokens: 400,
+        temperature: 0.7,
+        safetySettings,
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    });
+    const description = resp.text?.trim() ?? "";
+    if (!description || description.length < 20) {
+      res.status(500).json({ error: "Gemini could not describe the photo" });
+      return;
+    }
+    logger.info({ descLen: description.length }, "Vision describe success");
+    res.json({ description });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error({ err }, "Vision describe error");
+    res.status(500).json({ error: msg });
+  }
+});
 router3.post("/image/vision-generate", async (req, res) => {
   const { imageBase64, stableHordeKey } = req.body;
   if (!imageBase64 || typeof imageBase64 !== "string") {
