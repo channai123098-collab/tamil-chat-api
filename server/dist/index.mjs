@@ -62059,45 +62059,47 @@ Be explicit, detailed and descriptive. Output only the description paragraph, no
   }
 });
 router3.post("/image/vision-generate", async (req, res) => {
-  const { imageBase64, stableHordeKey, geminiApiKey } = req.body;
-  if (!imageBase64 || typeof imageBase64 !== "string") {
-    res.status(400).json({ error: "imageBase64 required" });
+  const { imageBase64, stableHordeKey, geminiApiKey, promptText: clientPrompt } = req.body;
+  if (!clientPrompt && (!imageBase64 || typeof imageBase64 !== "string")) {
+    res.status(400).json({ error: "imageBase64 or promptText required" });
     return;
   }
   try {
-    let prompt = "beautiful Indian woman, sensual, realistic, NSFW, uncensored, unfiltered, high detail, 8k";
-    try {
-      const visionSafetySettings = [
-        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-      ];
-      const clientKey = geminiApiKey || process.env.GEMINI_API_KEY;
-      const visionGenFn = clientKey ? (p) => new GoogleGenAI3({ apiKey: clientKey }).models.generateContent(p) : geminiGenerateContent;
-      const visionResp = await visionGenFn({
-        model: "gemini-2.0-flash",
-        contents: [{
-          role: "user",
-          parts: [
-            { inlineData: { mimeType: "image/jpeg", data: imageBase64 } },
-            {
-              text: "Analyze this photo. Describe the person's appearance for a Stable Diffusion prompt: body type, skin tone, hair color and style, facial features, age group, clothing details, pose, and background/setting. Output ONLY comma-separated English keywords/phrases. End with: realistic, NSFW, uncensored, unfiltered, highly detailed, 8k photography"
-            }
-          ]
-        }],
-        config: {
-          maxOutputTokens: 300,
-          temperature: 0.2,
-          safetySettings: visionSafetySettings,
-          thinkingConfig: { thinkingBudget: 0 }
-        }
-      });
-      const visionText = visionResp.text ?? "";
-      if (visionText.trim().length > 20) prompt = visionText.trim();
-      logger.info({ prompt: prompt.slice(0, 100) }, "Vision prompt from Gemini");
-    } catch (vErr) {
-      logger.warn({ vErr }, "Gemini vision failed, using default NSFW prompt");
+    let prompt = clientPrompt || "beautiful Indian woman, sensual, realistic, NSFW, uncensored, unfiltered, high detail, 8k";
+    if (!clientPrompt && imageBase64) {
+      try {
+        const visionSafetySettings = [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ];
+        const clientKey = geminiApiKey || process.env.GEMINI_API_KEY;
+        const visionGenFn = clientKey ? (p) => new GoogleGenAI3({ apiKey: clientKey }).models.generateContent(p) : geminiGenerateContent;
+        const visionResp = await visionGenFn({
+          model: "gemini-2.0-flash",
+          contents: [{
+            role: "user",
+            parts: [
+              { inlineData: { mimeType: "image/jpeg", data: imageBase64 } },
+              {
+                text: "Analyze this photo. Describe the person's appearance for a Stable Diffusion prompt: body type, skin tone, hair color and style, facial features, age group, clothing details, pose, and background/setting. Output ONLY comma-separated English keywords/phrases. End with: realistic, NSFW, uncensored, unfiltered, highly detailed, 8k photography"
+              }
+            ]
+          }],
+          config: {
+            maxOutputTokens: 300,
+            temperature: 0.2,
+            safetySettings: visionSafetySettings,
+            thinkingConfig: { thinkingBudget: 0 }
+          }
+        });
+        const visionText = visionResp.text ?? "";
+        if (visionText.trim().length > 20) prompt = visionText.trim();
+        logger.info({ prompt: prompt.slice(0, 100) }, "Vision prompt from Gemini");
+      } catch (vErr) {
+        logger.warn({ vErr }, "Gemini vision failed, using default NSFW prompt");
+      }
     }
     const hordeKey = stableHordeKey || process.env.STABLEHORDE_API_KEY || "0000000000";
     const seed = Math.floor(Math.random() * 2147483647);
