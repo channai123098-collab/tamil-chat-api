@@ -52784,6 +52784,7 @@ var chat_default = router2;
 // src/routes/image.ts
 var import_express3 = __toESM(require_express2(), 1);
 import crypto2 from "node:crypto";
+import { GoogleGenAI as GoogleGenAI3 } from "@google/genai";
 
 // ../../node_modules/.pnpm/openai@6.35.0_ws@8.20.0_zod@4.3.6/node_modules/openai/internal/tslib.mjs
 function __classPrivateFieldSet(receiver, state, value, kind, f) {
@@ -59945,6 +59946,18 @@ var openai = new OpenAI({
 });
 
 // src/routes/image.ts
+function getDirectGeminiAI() {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) return null;
+  return new GoogleGenAI3({ apiKey: key });
+}
+async function geminiGenerateContent(params) {
+  const direct = getDirectGeminiAI();
+  if (direct) {
+    return direct.models.generateContent(params);
+  }
+  return ai.models.generateContent(params);
+}
 var router3 = (0, import_express3.Router)();
 var NUDITY_WORDS = [
   "dress \u0B87\u0BB2\u0BCD\u0BB2\u0BBE\u0BAE\u0BB2\u0BCD",
@@ -61996,7 +62009,7 @@ router3.post("/image/vision-describe", async (req, res) => {
       { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
       { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
     ];
-    const resp = await ai.models.generateContent({
+    const resp = await geminiGenerateContent({
       model: "gemini-2.0-flash",
       contents: [{
         role: "user",
@@ -62058,7 +62071,7 @@ router3.post("/image/vision-generate", async (req, res) => {
         { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
         { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
       ];
-      const visionResp = await ai.models.generateContent({
+      const visionResp = await geminiGenerateContent({
         model: "gemini-2.0-flash",
         contents: [{
           role: "user",
