@@ -62614,6 +62614,48 @@ router8.get("/notes/load", async (req, res) => {
     res.status(500).json({ error: msg });
   }
 });
+router8.get("/notes/list", async (req, res) => {
+  const { deviceKey } = req.query;
+  if (!deviceKey) {
+    res.status(400).json({ error: "deviceKey required" });
+    return;
+  }
+  const creds = cloudCreds();
+  if (!creds) {
+    res.status(503).json({ error: "Cloud storage not configured" });
+    return;
+  }
+  const { cloudName, apiKey: apiKey4, apiSecret } = creds;
+  const dk = deviceKey.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32);
+  const prefix = `notes/${dk}_`;
+  try {
+    const auth = Buffer.from(`${apiKey4}:${apiSecret}`).toString("base64");
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/resources/raw/upload?prefix=${encodeURIComponent(prefix)}&type=upload&max_results=100`;
+    const r = await fetch(url, { headers: { Authorization: `Basic ${auth}` } });
+    if (!r.ok) {
+      res.status(500).json({ error: "Cloudinary list failed" });
+      return;
+    }
+    const data = await r.json();
+    const resources = data.resources ?? [];
+    const notes = resources.map((item) => {
+      const rawId = item.public_id.replace(prefix, "");
+      const personaId = rawId.replace(/_/g, function(m, offset, str2) {
+        return str2.slice(offset, offset + 2) === "__" ? "__" : "_";
+      });
+      return {
+        publicId: item.public_id,
+        personaId: rawId,
+        createdAt: item.created_at,
+        bytes: item.bytes
+      };
+    });
+    res.json({ ok: true, notes });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: msg });
+  }
+});
 var notes_default = router8;
 
 // src/routes/index.ts
