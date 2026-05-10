@@ -61997,7 +61997,7 @@ router3.post("/image/cloudinary-delete", async (req, res) => {
   }
 });
 router3.post("/image/vision-describe", async (req, res) => {
-  const { imageBase64 } = req.body;
+  const { imageBase64, geminiApiKey } = req.body;
   if (!imageBase64 || typeof imageBase64 !== "string") {
     res.status(400).json({ error: "imageBase64 required" });
     return;
@@ -62009,7 +62009,9 @@ router3.post("/image/vision-describe", async (req, res) => {
       { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
       { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
     ];
-    const resp = await geminiGenerateContent({
+    const clientKey = geminiApiKey || process.env.GEMINI_API_KEY;
+    const genFn = clientKey ? (p) => new GoogleGenAI3({ apiKey: clientKey }).models.generateContent(p) : geminiGenerateContent;
+    const resp = await genFn({
       model: "gemini-2.0-flash",
       contents: [{
         role: "user",
@@ -62057,7 +62059,7 @@ Be explicit, detailed and descriptive. Output only the description paragraph, no
   }
 });
 router3.post("/image/vision-generate", async (req, res) => {
-  const { imageBase64, stableHordeKey } = req.body;
+  const { imageBase64, stableHordeKey, geminiApiKey } = req.body;
   if (!imageBase64 || typeof imageBase64 !== "string") {
     res.status(400).json({ error: "imageBase64 required" });
     return;
@@ -62071,7 +62073,9 @@ router3.post("/image/vision-generate", async (req, res) => {
         { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
         { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
       ];
-      const visionResp = await geminiGenerateContent({
+      const clientKey = geminiApiKey || process.env.GEMINI_API_KEY;
+      const visionGenFn = clientKey ? (p) => new GoogleGenAI3({ apiKey: clientKey }).models.generateContent(p) : geminiGenerateContent;
+      const visionResp = await visionGenFn({
         model: "gemini-2.0-flash",
         contents: [{
           role: "user",
