@@ -52780,10 +52780,11 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
         }
         if (!fallbackDone && openRouterApiKey) {
           const orModels = [
-            { id: "z-ai/glm-4.5-air:free", label: "GLM 4.5 Air" },
-            { id: "minimax/minimax-m2.5:free", label: "MiniMax M2.5" },
             { id: "openai/gpt-oss-120b:free", label: "GPT-OSS 120B" },
-            { id: "nvidia/nemotron-nano-9b-v2:free", label: "Nemotron 9B" }
+            { id: "nvidia/nemotron-3-super-120b-a12b:free", label: "Nemotron 3 Super 120B" },
+            { id: "openai/gpt-oss-20b:free", label: "GPT-OSS 20B" },
+            { id: "z-ai/glm-4.5-air:free", label: "GLM 4.5 Air" },
+            { id: "nvidia/nemotron-nano-9b-v2:free", label: "Nemotron Nano 9B" }
           ];
           const orMessages = [];
           if (systemPrompt) orMessages.push({ role: "system", content: systemPrompt });
