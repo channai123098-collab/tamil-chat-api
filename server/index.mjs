@@ -52784,10 +52784,10 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
         }
         if (!fallbackDone && openRouterApiKey) {
           const orModels = [
-            { id: "cognitivecomputations/dolphin-mistral-24b-venice-edition:free", label: "Dolphin Venice (NSFW)" },
-            { id: "nousresearch/hermes-3-llama-3.1-405b:free", label: "Hermes 405B" },
-            { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B" },
-            { id: "qwen/qwen3-next-80b-a3b-instruct:free", label: "Qwen3 80B" }
+            { id: "z-ai/glm-4.5-air:free", label: "GLM 4.5 Air" },
+            { id: "minimax/minimax-m2.5:free", label: "MiniMax M2.5" },
+            { id: "openai/gpt-oss-120b:free", label: "GPT-OSS 120B" },
+            { id: "nvidia/nemotron-nano-9b-v2:free", label: "Nemotron 9B" }
           ];
           const orMessages = [];
           if (systemPrompt) orMessages.push({ role: "system", content: systemPrompt });
