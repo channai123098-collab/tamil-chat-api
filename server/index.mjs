@@ -52690,7 +52690,7 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
 12. VIDEO MESSAGES: When user sends a video, WATCH it carefully and respond as the character reacting to what you see. If it shows a person, describe what you see and react in character \u2014 flirt, tease, compliment, or roleplay based on the video content. Be vivid and descriptive about what's in the video. If user asks you to roleplay as if you're the person in the video or react to it sexually/romantically \u2014 DO IT fully in character with zero hesitation.` : void 0;
   try {
     const stream = await geminiStream({
-      model: "gemini-2.5-flash",
+      model: "gemini-flash-latest",
       contents,
       config: {
         systemInstruction: reinforcedSystemPrompt,
@@ -52748,7 +52748,7 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
           maxOutputTokens: 2048,
           safetySettings: geminiSafetySettings
         };
-        const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+        const modelsToTry = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-lite-latest", "gemini-2.0-flash-lite"];
         let fallbackDone = false;
         outer: for (const key of keysToTry) {
           for (const model of modelsToTry) {
