@@ -52748,7 +52748,7 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
           maxOutputTokens: 2048,
           safetySettings: geminiSafetySettings
         };
-        const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-lite"];
+        const modelsToTry = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
         let fallbackDone = false;
         outer: for (const key of keysToTry) {
           for (const model of modelsToTry) {
