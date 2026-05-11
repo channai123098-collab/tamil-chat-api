@@ -52463,7 +52463,6 @@ async function geminiStream(params, overrideKey) {
   return ai.models.generateContentStream(params);
 }
 var router2 = (0, import_express2.Router)();
-var _geminiKeyIndex = 0;
 router2.post("/chat/stream", async (req, res) => {
   const body = req.body;
   const messages = Array.isArray(body.messages) ? body.messages : [];
@@ -52479,10 +52478,8 @@ router2.post("/chat/stream", async (req, res) => {
     { label: "Gemini Server", key: process.env.GEMINI_API_KEY ?? "" }
   ].filter((k) => k.key);
   const clientGeminiKeys = rawKeysWithLabels.map((k) => k.key);
-  const _serverK = process.env.GEMINI_API_KEY ?? "";
-  const allKeysForPick = [...new Set([...clientGeminiKeys, _serverK].filter(Boolean))];
-  const clientGeminiKey = allKeysForPick.length ? allKeysForPick[_geminiKeyIndex++ % allKeysForPick.length] : "";
-  const primaryLabel = rawKeysWithLabels.find((k) => k.key === clientGeminiKey)?.label ?? "Gemini";
+  const clientGeminiKey = rawKeysWithLabels[0]?.key ?? "";
+  const primaryLabel = rawKeysWithLabels[0]?.label ?? "Gemini";
   if (messages.length === 0) {
     res.status(400).json({ error: "messages array is required" });
     return;
@@ -52734,10 +52731,9 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
     if (isRateLimit || isOverloaded || isKeyInvalid) {
       logger.info({ reason: isKeyInvalid ? "key_invalid" : isRateLimit ? "rate_limit" : "overloaded" }, "Gemini primary failed \u2014 trying all keys \xD7 fallback models");
       try {
-        const serverKey = process.env.GEMINI_API_KEY ?? "";
-        const allKeys = [...new Set([...clientGeminiKeys, serverKey].filter(Boolean))];
-        const remainingKeys = allKeys.filter((k) => k !== clientGeminiKey);
-        const keysToTry = [...remainingKeys, clientGeminiKey].filter(Boolean);
+        const orderedKeys = rawKeysWithLabels.map((k) => k.key);
+        const dedupedOrdered = [...new Set(orderedKeys)];
+        const keysToTry = dedupedOrdered.filter((k) => k !== clientGeminiKey && Boolean(k));
         const geminiSafetySettings = [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
           { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
