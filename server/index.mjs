@@ -52464,14 +52464,6 @@ async function geminiStream(params, overrideKey) {
 }
 var router2 = (0, import_express2.Router)();
 var _geminiKeyIndex = 0;
-function pickGeminiKey(clientKeys) {
-  const serverKey = process.env.GEMINI_API_KEY ?? "";
-  const allKeys = [...new Set([...clientKeys, serverKey].filter(Boolean))];
-  if (!allKeys.length) return null;
-  const key = allKeys[_geminiKeyIndex % allKeys.length];
-  _geminiKeyIndex++;
-  return key;
-}
 router2.post("/chat/stream", async (req, res) => {
   const body = req.body;
   const messages = Array.isArray(body.messages) ? body.messages : [];
@@ -52479,12 +52471,17 @@ router2.post("/chat/stream", async (req, res) => {
   const chatMode = body.mode === "support" ? "support" : "chat";
   const chatProvider = body.chatProvider === "groq" ? "groq" : "gemini";
   const groqApiKey = (typeof body.groqApiKey === "string" ? body.groqApiKey.trim() : "") || (process.env.GROQ_API_KEY ?? "");
-  const clientGeminiKeys = [
-    typeof body.geminiApiKey === "string" ? body.geminiApiKey.trim() : "",
-    typeof body.geminiApiKey2 === "string" ? body.geminiApiKey2.trim() : "",
-    typeof body.geminiApiKey3 === "string" ? body.geminiApiKey3.trim() : ""
-  ].filter(Boolean);
-  const clientGeminiKey = pickGeminiKey(clientGeminiKeys) ?? "";
+  const rawKeysWithLabels = [
+    { label: "Gemini Key 1", key: typeof body.geminiApiKey === "string" ? body.geminiApiKey.trim() : "" },
+    { label: "Gemini Key 2", key: typeof body.geminiApiKey2 === "string" ? body.geminiApiKey2.trim() : "" },
+    { label: "Gemini Key 3", key: typeof body.geminiApiKey3 === "string" ? body.geminiApiKey3.trim() : "" },
+    { label: "Gemini Server", key: process.env.GEMINI_API_KEY ?? "" }
+  ].filter((k) => k.key);
+  const clientGeminiKeys = rawKeysWithLabels.map((k) => k.key);
+  const _serverK = process.env.GEMINI_API_KEY ?? "";
+  const allKeysForPick = [...new Set([...clientGeminiKeys, _serverK].filter(Boolean))];
+  const clientGeminiKey = allKeysForPick.length ? allKeysForPick[_geminiKeyIndex++ % allKeysForPick.length] : "";
+  const primaryLabel = rawKeysWithLabels.find((k) => k.key === clientGeminiKey)?.label ?? "Gemini";
   if (messages.length === 0) {
     res.status(400).json({ error: "messages array is required" });
     return;
@@ -52586,6 +52583,9 @@ STYLE:
         res.end();
         return;
       }
+      res.write(`data: ${JSON.stringify({ aiSource: "Groq" })}
+
+`);
       const reader = groqResp.body?.getReader();
       if (!reader) {
         res.write(`data: ${JSON.stringify({ error: "Groq stream unavailable", errorCode: "GROQ_ERROR" })}
@@ -52708,6 +52708,9 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
         ]
       }
     }, clientGeminiKey || void 0);
+    res.write(`data: ${JSON.stringify({ aiSource: primaryLabel })}
+
+`);
     for await (const chunk of stream) {
       const text = chunk.text;
       if (text) {
@@ -52755,6 +52758,10 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
             try {
               logger.info({ key: key.slice(-6), model }, "Trying fallback key+model");
               const fallbackStream = await geminiStream({ model, contents, config: geminiConfig }, key);
+              const fbLabel = rawKeysWithLabels.find((k) => k.key === key)?.label ?? "Gemini";
+              res.write(`data: ${JSON.stringify({ aiSource: `${fbLabel} (${model}, fallback)` })}
+
+`);
               for await (const chunk of fallbackStream) {
                 const text = chunk.text;
                 if (text) res.write(`data: ${JSON.stringify({ content: text })}
@@ -52789,6 +52796,9 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
           if (groqResp.ok) {
             const reader = groqResp.body?.getReader();
             if (reader) {
+              res.write(`data: ${JSON.stringify({ aiSource: "Groq (fallback)" })}
+
+`);
               const decoder = new TextDecoder();
               let buffer = "";
               while (true) {
