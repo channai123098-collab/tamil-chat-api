@@ -52727,46 +52727,54 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
     const isRateLimit = rawLower.includes("429") || rawLower.includes("rate") || rawLower.includes("quota") || rawLower.includes("resource_exhausted");
     const isOverloaded = rawLower.includes("503") || rawLower.includes("overloaded") || rawLower.includes("unavailable") || rawLower.includes("service_unavailable") || rawLower.includes("502") || rawLower.includes("bad gateway");
     if (isRateLimit || isOverloaded) {
-      logger.info("Gemini rate-limited \u2014 falling back to gemini-1.5-flash");
+      logger.info("Gemini primary failed \u2014 trying all keys \xD7 fallback models");
       try {
-        const fallbackModels = ["gemini-1.5-flash", "gemini-2.0-flash-lite"];
+        const serverKey = process.env.GEMINI_API_KEY ?? "";
+        const allKeys = [...new Set([...clientGeminiKeys, serverKey].filter(Boolean))];
+        const remainingKeys = allKeys.filter((k) => k !== clientGeminiKey);
+        const keysToTry = [...remainingKeys, clientGeminiKey].filter(Boolean);
+        const geminiSafetySettings = [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "BLOCK_NONE" }
+        ];
+        const geminiConfig = {
+          systemInstruction: reinforcedSystemPrompt,
+          temperature: 0.95,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+          safetySettings: geminiSafetySettings
+        };
+        const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-lite"];
         let fallbackDone = false;
-        for (const fallbackModel of fallbackModels) {
-          try {
-            const fallbackStream = await geminiStream({
-              model: fallbackModel,
-              contents,
-              config: {
-                systemInstruction: reinforcedSystemPrompt,
-                temperature: 0.95,
-                topP: 0.95,
-                maxOutputTokens: 2048,
-                safetySettings: [
-                  { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "BLOCK_NONE" }
-                ]
+        outer: for (const key of keysToTry) {
+          for (const model of modelsToTry) {
+            try {
+              logger.info({ key: key.slice(-6), model }, "Trying fallback key+model");
+              const fallbackStream = await geminiStream({ model, contents, config: geminiConfig }, key);
+              for await (const chunk of fallbackStream) {
+                const text = chunk.text;
+                if (text) res.write(`data: ${JSON.stringify({ content: text })}
+
+`);
               }
-            }, clientGeminiKey || void 0);
-            for await (const chunk of fallbackStream) {
-              const text = chunk.text;
-              if (text) res.write(`data: ${JSON.stringify({ content: text })}
+              res.write(`data: ${JSON.stringify({ done: true })}
 
 `);
+              res.end();
+              fallbackDone = true;
+              break outer;
+            } catch (keyModelErr) {
+              const kmMsg = (keyModelErr instanceof Error ? keyModelErr.message : "").toLowerCase();
+              logger.warn({ key: key.slice(-6), model, err: kmMsg }, "Key+model fallback failed");
+              if (kmMsg.includes("401") || kmMsg.includes("403") || kmMsg.includes("invalid")) break;
             }
-            res.write(`data: ${JSON.stringify({ done: true })}
-
-`);
-            res.end();
-            fallbackDone = true;
-            break;
-          } catch (modelErr) {
-            logger.warn({ modelErr, fallbackModel }, "Fallback model also failed, trying next");
           }
         }
         if (!fallbackDone && groqApiKey) {
+          logger.info("All Gemini keys exhausted \u2014 trying Groq fallback");
           const groqMessages = [];
           if (systemPrompt) groqMessages.push({ role: "system", content: systemPrompt });
           for (const m of messages) {
@@ -52813,7 +52821,7 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
         }
         if (fallbackDone) return;
       } catch (fallbackErr) {
-        logger.error({ fallbackErr }, "All fallback models failed");
+        logger.error({ fallbackErr }, "All fallback attempts failed");
       }
     }
     let errorCode = "UNKNOWN";
