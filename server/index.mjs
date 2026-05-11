@@ -52783,71 +52783,85 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
           }
         }
         if (!fallbackDone && openRouterApiKey) {
-          logger.info("All Gemini keys exhausted \u2014 trying OpenRouter DeepSeek V3");
-          try {
-            const orMessages = [];
-            if (systemPrompt) orMessages.push({ role: "system", content: systemPrompt });
-            for (const m of messages) {
-              orMessages.push({ role: m.role === "assistant" ? "assistant" : "user", content: m.content ?? "" });
-            }
-            const orResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${openRouterApiKey}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://tamil-chat-api.onrender.com",
-                "X-Title": "My AI Chat"
-              },
-              body: JSON.stringify({
-                model: "deepseek/deepseek-chat-v3.1:free",
-                messages: orMessages,
-                stream: true,
-                max_tokens: 2048,
-                temperature: 0.95,
-                top_p: 0.95
-              })
-            });
-            if (orResp.ok) {
+          const orModels = [
+            { id: "cognitivecomputations/dolphin-mistral-24b-venice-edition:free", label: "Dolphin Venice (NSFW)" },
+            { id: "nousresearch/hermes-3-llama-3.1-405b:free", label: "Hermes 405B" },
+            { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B" },
+            { id: "qwen/qwen3-next-80b-a3b-instruct:free", label: "Qwen3 80B" }
+          ];
+          const orMessages = [];
+          if (systemPrompt) orMessages.push({ role: "system", content: systemPrompt });
+          for (const m of messages) {
+            orMessages.push({ role: m.role === "assistant" ? "assistant" : "user", content: m.content ?? "" });
+          }
+          for (const model of orModels) {
+            if (fallbackDone) break;
+            try {
+              logger.info({ model: model.id }, "Trying OpenRouter model");
+              const orResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${openRouterApiKey}`,
+                  "Content-Type": "application/json",
+                  "HTTP-Referer": "https://tamil-chat-api.onrender.com",
+                  "X-Title": "My AI Chat"
+                },
+                body: JSON.stringify({
+                  model: model.id,
+                  messages: orMessages,
+                  stream: true,
+                  max_tokens: 2048,
+                  temperature: 0.95,
+                  top_p: 0.95
+                })
+              });
+              if (!orResp.ok) {
+                const errTxt = await orResp.text().catch(() => "");
+                logger.warn({ status: orResp.status, model: model.id, errTxt: errTxt.slice(0, 200) }, "OpenRouter model failed");
+                continue;
+              }
               const orReader = orResp.body?.getReader();
-              if (orReader) {
-                res.write(`data: ${JSON.stringify({ aiSource: "OpenRouter DeepSeek V3 (fallback)" })}
+              if (!orReader) continue;
+              res.write(`data: ${JSON.stringify({ aiSource: `OpenRouter ${model.label} (fallback)` })}
 
 `);
-                const orDecoder = new TextDecoder();
-                let orBuffer = "";
-                while (true) {
-                  const { done, value } = await orReader.read();
-                  if (done) break;
-                  orBuffer += orDecoder.decode(value, { stream: true });
-                  const lines = orBuffer.split("\n");
-                  orBuffer = lines.pop() ?? "";
-                  for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (!trimmed.startsWith("data:")) continue;
-                    const payload = trimmed.slice(5).trim();
-                    if (!payload || payload === "[DONE]") continue;
-                    try {
-                      const parsed = JSON.parse(payload);
-                      const text = parsed?.choices?.[0]?.delta?.content;
-                      if (text) res.write(`data: ${JSON.stringify({ content: text })}
+              const orDecoder = new TextDecoder();
+              let orBuffer = "";
+              let gotAnyContent = false;
+              while (true) {
+                const { done, value } = await orReader.read();
+                if (done) break;
+                orBuffer += orDecoder.decode(value, { stream: true });
+                const lines = orBuffer.split("\n");
+                orBuffer = lines.pop() ?? "";
+                for (const line of lines) {
+                  const trimmed = line.trim();
+                  if (!trimmed.startsWith("data:")) continue;
+                  const payload = trimmed.slice(5).trim();
+                  if (!payload || payload === "[DONE]") continue;
+                  try {
+                    const parsed = JSON.parse(payload);
+                    const text = parsed?.choices?.[0]?.delta?.content;
+                    if (text) {
+                      res.write(`data: ${JSON.stringify({ content: text })}
 
 `);
-                    } catch {
+                      gotAnyContent = true;
                     }
+                  } catch {
                   }
                 }
+              }
+              if (gotAnyContent) {
                 res.write(`data: ${JSON.stringify({ done: true })}
 
 `);
                 res.end();
                 fallbackDone = true;
               }
-            } else {
-              const errTxt = await orResp.text().catch(() => "");
-              logger.warn({ status: orResp.status, errTxt: errTxt.slice(0, 200) }, "OpenRouter fallback failed");
+            } catch (orErr) {
+              logger.warn({ err: orErr instanceof Error ? orErr.message : "", model: model.id }, "OpenRouter model threw");
             }
-          } catch (orErr) {
-            logger.warn({ err: orErr instanceof Error ? orErr.message : "" }, "OpenRouter fallback threw");
           }
         }
         if (!fallbackDone && groqApiKey) {
