@@ -52925,7 +52925,7 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
       userMessage = "\u{1F634} AI model \u0BA4\u0BC2\u0B99\u0BCD\u0B95\u0BC1\u0BA4\u0BC1 (overloaded) \u2014 1-2 \u0BA8\u0BBF\u0BAE\u0BBF\u0BB7\u0BAE\u0BCD \u0B95\u0BB4\u0BBF\u0B9A\u0BCD\u0B9A\u0BC1 try \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.";
     } else if (isRateLimit) {
       errorCode = "RATE_LIMIT";
-      userMessage = "\u26A1 AI Rate limit \u2014 \u0B85\u0BA4\u0BBF\u0B95\u0BAE\u0BBE use \u0BAA\u0BA3\u0BCD\u0BA3\u0BBF\u0B9F\u0BCD\u0B9F\u0BC0\u0B99\u0BCD\u0B95. 1-2 \u0BA8\u0BBF\u0BAE\u0BBF\u0BB7\u0BAE\u0BCD \u0B95\u0BB4\u0BBF\u0B9A\u0BCD\u0B9A\u0BC1 try \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.";
+      userMessage = "\u26A1 AI Rate limit [v3-glm] \u2014 \u0B85\u0BA4\u0BBF\u0B95\u0BAE\u0BBE use \u0BAA\u0BA3\u0BCD\u0BA3\u0BBF\u0B9F\u0BCD\u0B9F\u0BC0\u0B99\u0BCD\u0B95. 1-2 \u0BA8\u0BBF\u0BAE\u0BBF\u0BB7\u0BAE\u0BCD \u0B95\u0BB4\u0BBF\u0B9A\u0BCD\u0B9A\u0BC1 try \u0BAA\u0BA3\u0BCD\u0BA3\u0BC1\u0B99\u0BCD\u0B95.";
     } else if (rawLower.includes("401") || rawLower.includes("403") || rawLower.includes("api_key") || rawLower.includes("invalid") || rawLower.includes("unauthorized") || rawLower.includes("permission")) {
       errorCode = "KEY_INVALID";
       userMessage = "\u{1F511} AI API Key invalid or expired \u2014 Admin-\u0B95\u0BBF\u0B9F\u0BCD\u0B9F \u0B9A\u0BCA\u0BB2\u0BCD\u0BB2\u0BC1\u0B99\u0BCD\u0B95.";
