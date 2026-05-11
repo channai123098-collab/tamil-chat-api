@@ -52471,6 +52471,7 @@ router2.post("/chat/stream", async (req, res) => {
   const chatMode = body.mode === "support" ? "support" : "chat";
   const chatProvider = body.chatProvider === "groq" ? "groq" : "gemini";
   const groqApiKey = (typeof body.groqApiKey === "string" ? body.groqApiKey.trim() : "") || (process.env.GROQ_API_KEY ?? "");
+  const openRouterApiKey = (typeof body.openRouterApiKey === "string" ? body.openRouterApiKey.trim() : "") || (process.env.OPENROUTER_API_KEY ?? "");
   const rawKeysWithLabels = [
     { label: "Gemini Key 1", key: typeof body.geminiApiKey === "string" ? body.geminiApiKey.trim() : "" },
     { label: "Gemini Key 2", key: typeof body.geminiApiKey2 === "string" ? body.geminiApiKey2.trim() : "" },
@@ -52779,6 +52780,74 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
               logger.warn({ key: key.slice(-6), model, err: kmMsg }, "Key+model fallback failed");
               if (kmMsg.includes("401") || kmMsg.includes("403") || kmMsg.includes("invalid")) break;
             }
+          }
+        }
+        if (!fallbackDone && openRouterApiKey) {
+          logger.info("All Gemini keys exhausted \u2014 trying OpenRouter DeepSeek V3");
+          try {
+            const orMessages = [];
+            if (systemPrompt) orMessages.push({ role: "system", content: systemPrompt });
+            for (const m of messages) {
+              orMessages.push({ role: m.role === "assistant" ? "assistant" : "user", content: m.content ?? "" });
+            }
+            const orResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${openRouterApiKey}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://tamil-chat-api.onrender.com",
+                "X-Title": "My AI Chat"
+              },
+              body: JSON.stringify({
+                model: "deepseek/deepseek-chat-v3.1:free",
+                messages: orMessages,
+                stream: true,
+                max_tokens: 2048,
+                temperature: 0.95,
+                top_p: 0.95
+              })
+            });
+            if (orResp.ok) {
+              const orReader = orResp.body?.getReader();
+              if (orReader) {
+                res.write(`data: ${JSON.stringify({ aiSource: "OpenRouter DeepSeek V3 (fallback)" })}
+
+`);
+                const orDecoder = new TextDecoder();
+                let orBuffer = "";
+                while (true) {
+                  const { done, value } = await orReader.read();
+                  if (done) break;
+                  orBuffer += orDecoder.decode(value, { stream: true });
+                  const lines = orBuffer.split("\n");
+                  orBuffer = lines.pop() ?? "";
+                  for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed.startsWith("data:")) continue;
+                    const payload = trimmed.slice(5).trim();
+                    if (!payload || payload === "[DONE]") continue;
+                    try {
+                      const parsed = JSON.parse(payload);
+                      const text = parsed?.choices?.[0]?.delta?.content;
+                      if (text) res.write(`data: ${JSON.stringify({ content: text })}
+
+`);
+                    } catch {
+                    }
+                  }
+                }
+                res.write(`data: ${JSON.stringify({ done: true })}
+
+`);
+                res.end();
+                fallbackDone = true;
+              }
+            } else {
+              const errTxt = await orResp.text().catch(() => "");
+              logger.warn({ status: orResp.status, errTxt: errTxt.slice(0, 200) }, "OpenRouter fallback failed");
+            }
+          } catch (orErr) {
+            logger.warn({ err: orErr instanceof Error ? orErr.message : "" }, "OpenRouter fallback threw");
           }
         }
         if (!fallbackDone && groqApiKey) {
