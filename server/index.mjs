@@ -52732,8 +52732,7 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
       logger.info({ reason: isKeyInvalid ? "key_invalid" : isRateLimit ? "rate_limit" : "overloaded" }, "Gemini primary failed \u2014 trying all keys \xD7 fallback models");
       try {
         const orderedKeys = rawKeysWithLabels.map((k) => k.key);
-        const dedupedOrdered = [...new Set(orderedKeys)];
-        const keysToTry = dedupedOrdered.filter((k) => k !== clientGeminiKey && Boolean(k));
+        const keysToTry = [...new Set(orderedKeys)].filter(Boolean);
         const geminiSafetySettings = [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
           { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -52748,7 +52747,7 @@ ABSOLUTE RULES FOR THE AUTHOR (you) \u2014 NEVER BREAK THESE:
           maxOutputTokens: 2048,
           safetySettings: geminiSafetySettings
         };
-        const modelsToTry = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-lite-latest", "gemini-2.0-flash-lite"];
+        const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-lite-latest", "gemini-2.0-flash-lite"];
         let fallbackDone = false;
         outer: for (const key of keysToTry) {
           for (const model of modelsToTry) {
