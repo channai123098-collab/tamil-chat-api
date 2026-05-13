@@ -2134,91 +2134,91 @@ router.get("/image/download/:jobId", (req: Request, res: Response): void => {
   }
 });
 
+// ── Cloudinary Routes ────────────────────────────────────────────────────────
 
-// ── Cloudinary Upload Endpoint ───────────────────────────────────────────────
-router.post("/image/cloudinary-upload", async (req: Request, res: Response): Promise<void> => {
-  const body = req.body as { b64_json?: string; mimeType?: string; folder?: string };
-  const b64 = typeof body.b64_json === 'string' ? body.b64_json : null;
-  const mimeType = typeof body.mimeType === 'string' ? body.mimeType : 'image/jpeg';
-  const folder = typeof body.folder === 'string' ? body.folder : 'tamil-ai-chat';
+const CLOUD_NAME   = process.env.CLOUDINARY_CLOUD_NAME;
+const CLOUD_KEY    = process.env.CLOUDINARY_API_KEY;
+const CLOUD_SECRET = process.env.CLOUDINARY_API_SECRET;
 
-  if (!b64) { res.status(400).json({ error: 'b64_json required' }); return; }
+function cloudinaryBasicAuth(): string {
+  return "Basic " + Buffer.from(`${CLOUD_KEY}:${CLOUD_SECRET}`).toString("base64");
+}
 
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-  if (!cloudName || !apiKey || !apiSecret) {
-    res.status(500).json({ error: 'Cloudinary credentials not configured' }); return;
+// ── GET /image/cloudinary-list?folder=<folder> ────────────────────────────────
+router.get("/image/cloudinary-list", async (req: Request, res: Response): Promise<void> => {
+  if (!CLOUD_NAME || !CLOUD_KEY || !CLOUD_SECRET) {
+    res.status(500).json({ error: "Cloudinary credentials not configured on server" });
+    return;
   }
-
+  const folder = typeof req.query.folder === "string" ? req.query.folder : "";
   try {
-    const timestamp = Math.floor(Date.now() / 1000);
-    const paramsToSign = `folder=${folder}&timestamp=${timestamp}`;
-    const crypto = await import('node:crypto');
-    const signature = crypto.createHmac('sha1', apiSecret).update(paramsToSign).digest('hex');
-
-    const formData = new FormData();
-    formData.append('file', `data:${mimeType};base64,${b64}`);
-    formData.append('api_key', apiKey);
-    formData.append('timestamp', String(timestamp));
-    formData.append('folder', folder);
-    formData.append('signature', signature);
-
-    const uploadResp = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: 'POST', body: formData, signal: AbortSignal.timeout(30_000) },
-    );
-
-    if (!uploadResp.ok) {
-      const errText = await uploadResp.text().catch(() => '');
-      res.status(502).json({ error: `Cloudinary upload failed: ${uploadResp.status}`, detail: errText.slice(0, 300) }); return;
+    const prefix = folder ? `${folder}/` : "";
+    const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/image?prefix=${encodeURIComponent(prefix)}&type=upload&max_results=100`;
+    const resp = await fetch(url, { headers: { Authorization: cloudinaryBasicAuth() } });
+    if (!resp.ok) {
+      const txt = await resp.text();
+      res.status(resp.status).json({ error: txt });
+      return;
     }
-
-    const data = await uploadResp.json() as { secure_url?: string; public_id?: string; width?: number; height?: number; format?: string; bytes?: number };
-    if (!data.secure_url) { res.status(502).json({ error: 'Cloudinary did not return a URL' }); return; }
-
-    logger.info({ url: data.secure_url, public_id: data.public_id }, 'Cloudinary upload success');
-    res.json({ url: data.secure_url, public_id: data.public_id, width: data.width, height: data.height, format: data.format, bytes: data.bytes });
+    const data = await resp.json() as { resources?: { secure_url: string; public_id: string }[] };
+    const images = (data.resources || []).map((r) => ({
+      url: r.secure_url,
+      public_id: r.public_id,
+    }));
+    res.json({ images });
   } catch (err) {
-    logger.error({ err }, 'Cloudinary upload error');
-    res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+    logger.error({ err }, "Cloudinary list error");
+    res.status(500).json({ error: "Cloudinary list failed" });
   }
 });
 
-
-// ── Cloudinary List Images Endpoint ─────────────────────────────────────────
-router.get("/image/cloudinary-list", async (req: Request, res: Response): Promise<void> => {
-  const folder = typeof req.query.folder === 'string' ? req.query.folder : '';
-  if (!folder) { res.status(400).json({ error: 'folder query param required' }); return; }
-
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
-  if (!cloudName || !apiKey || !apiSecret) {
-    res.status(500).json({ error: 'Cloudinary credentials not configured' }); return;
+// ── POST /image/cloudinary-upload ─────────────────────────────────────────────
+router.post("/image/cloudinary-upload", async (req: Request, res: Response): Promise<void> => {
+  if (!CLOUD_NAME || !CLOUD_KEY || !CLOUD_SECRET) {
+    res.status(500).json({ error: "Cloudinary credentials not configured on server" });
+    return;
   }
-
+  const body = req.body as { b64_json?: string; folder?: string; filename?: string; mimeType?: string };
+  const b64 = body.b64_json;
+  const folder = body.folder || "General";
+  if (!b64) {
+    res.status(400).json({ error: "b64_json required" });
+    return;
+  }
   try {
-    const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
-    const encodedFolder = encodeURIComponent(folder);
-    const listResp = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/resources/image?prefix=${encodedFolder}&max_results=100&type=upload`,
-      { headers: { 'Authorization': `Basic ${auth}` }, signal: AbortSignal.timeout(15_000) },
-    );
-    if (!listResp.ok) {
-      const errText = await listResp.text().catch(() => '');
-      res.status(502).json({ error: `Cloudinary list failed: ${listResp.status}`, detail: errText.slice(0, 300) }); return;
+    const crypto = await import("crypto");
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const paramsToSign = `folder=${folder}&timestamp=${timestamp}`;
+    const signature = crypto
+      .createHash("sha256")
+      .update(paramsToSign + CLOUD_SECRET)
+      .digest("hex");
+
+    const formData = new FormData();
+    const mimeType = body.mimeType || "image/jpeg";
+    const ext = mimeType.includes("png") ? "png" : mimeType.includes("webp") ? "webp" : "jpg";
+    const dataUri = `data:${mimeType};base64,${b64}`;
+    formData.append("file", dataUri);
+    formData.append("api_key", CLOUD_KEY);
+    formData.append("timestamp", timestamp);
+    formData.append("folder", folder);
+    formData.append("signature", signature);
+    if (body.filename) formData.append("public_id", body.filename.replace(/\.[^.]+$/, ""));
+
+    const resp = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!resp.ok) {
+      const txt = await resp.text();
+      res.status(resp.status).json({ error: txt });
+      return;
     }
-    const data = await listResp.json() as { resources?: { secure_url: string; public_id: string; width?: number; height?: number }[] };
-    const images = (data.resources || []).map((r: any) => ({
-      url: r.secure_url, public_id: r.public_id, width: r.width, height: r.height,
-    }));
-    logger.info({ folder, count: images.length }, 'Cloudinary list success');
-    res.json({ images, count: images.length });
+    const data = await resp.json() as { secure_url: string; public_id: string };
+    res.json({ url: data.secure_url, public_id: data.public_id });
   } catch (err) {
-    logger.error({ err }, 'Cloudinary list error');
-    res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+    logger.error({ err }, "Cloudinary upload error");
+    res.status(500).json({ error: "Cloudinary upload failed" });
   }
 });
 
