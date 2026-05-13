@@ -2186,5 +2186,41 @@ router.post("/image/cloudinary-upload", async (req: Request, res: Response): Pro
   }
 });
 
+
+// ── Cloudinary List Images Endpoint ─────────────────────────────────────────
+router.get("/image/cloudinary-list", async (req: Request, res: Response): Promise<void> => {
+  const folder = typeof req.query.folder === 'string' ? req.query.folder : '';
+  if (!folder) { res.status(400).json({ error: 'folder query param required' }); return; }
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey || !apiSecret) {
+    res.status(500).json({ error: 'Cloudinary credentials not configured' }); return;
+  }
+
+  try {
+    const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
+    const encodedFolder = encodeURIComponent(folder);
+    const listResp = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/resources/image?prefix=${encodedFolder}&max_results=100&type=upload`,
+      { headers: { 'Authorization': `Basic ${auth}` }, signal: AbortSignal.timeout(15_000) },
+    );
+    if (!listResp.ok) {
+      const errText = await listResp.text().catch(() => '');
+      res.status(502).json({ error: `Cloudinary list failed: ${listResp.status}`, detail: errText.slice(0, 300) }); return;
+    }
+    const data = await listResp.json() as { resources?: { secure_url: string; public_id: string; width?: number; height?: number }[] };
+    const images = (data.resources || []).map((r: any) => ({
+      url: r.secure_url, public_id: r.public_id, width: r.width, height: r.height,
+    }));
+    logger.info({ folder, count: images.length }, 'Cloudinary list success');
+    res.json({ images, count: images.length });
+  } catch (err) {
+    logger.error({ err }, 'Cloudinary list error');
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+  }
+});
+
 export default router;
 
