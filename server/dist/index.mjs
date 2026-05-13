@@ -52428,7 +52428,7 @@ async function* streamGroq(messages, systemPrompt, groqApiKey) {
       "Authorization": `Bearer ${key}`
     },
     body: JSON.stringify({
-      model: "gemma2-9b-it",
+      model: "llama-3.3-70b-versatile",
       messages: groqMessages,
       stream: true,
       temperature: 0.95,
