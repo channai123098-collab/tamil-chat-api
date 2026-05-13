@@ -2134,5 +2134,57 @@ router.get("/image/download/:jobId", (req: Request, res: Response): void => {
   }
 });
 
+
+// ── Cloudinary Upload Endpoint ───────────────────────────────────────────────
+router.post("/image/cloudinary-upload", async (req: Request, res: Response): Promise<void> => {
+  const body = req.body as { b64_json?: string; mimeType?: string; folder?: string };
+  const b64 = typeof body.b64_json === 'string' ? body.b64_json : null;
+  const mimeType = typeof body.mimeType === 'string' ? body.mimeType : 'image/jpeg';
+  const folder = typeof body.folder === 'string' ? body.folder : 'tamil-ai-chat';
+
+  if (!b64) { res.status(400).json({ error: 'b64_json required' }); return; }
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    res.status(500).json({ error: 'Cloudinary credentials not configured' }); return;
+  }
+
+  try {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const paramsToSign = `folder=${folder}&timestamp=${timestamp}`;
+    const crypto = await import('node:crypto');
+    const signature = crypto.createHmac('sha1', apiSecret).update(paramsToSign).digest('hex');
+
+    const formData = new FormData();
+    formData.append('file', `data:${mimeType};base64,${b64}`);
+    formData.append('api_key', apiKey);
+    formData.append('timestamp', String(timestamp));
+    formData.append('folder', folder);
+    formData.append('signature', signature);
+
+    const uploadResp = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: 'POST', body: formData, signal: AbortSignal.timeout(30_000) },
+    );
+
+    if (!uploadResp.ok) {
+      const errText = await uploadResp.text().catch(() => '');
+      res.status(502).json({ error: `Cloudinary upload failed: ${uploadResp.status}`, detail: errText.slice(0, 300) }); return;
+    }
+
+    const data = await uploadResp.json() as { secure_url?: string; public_id?: string; width?: number; height?: number; format?: string; bytes?: number };
+    if (!data.secure_url) { res.status(502).json({ error: 'Cloudinary did not return a URL' }); return; }
+
+    logger.info({ url: data.secure_url, public_id: data.public_id }, 'Cloudinary upload success');
+    res.json({ url: data.secure_url, public_id: data.public_id, width: data.width, height: data.height, format: data.format, bytes: data.bytes });
+  } catch (err) {
+    logger.error({ err }, 'Cloudinary upload error');
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+  }
+});
+
 export default router;
 
