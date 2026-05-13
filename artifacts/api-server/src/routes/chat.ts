@@ -309,6 +309,101 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
   }
 });
 
+// ── POST /chat → non-streaming JSON endpoint (for older app versions) ────────
+router.post("/chat", async (req: Request, res: Response) => {
+  const body = req.body as ChatRequestBody & { message?: string; conversationHistory?: ChatMessage[] };
+  // Support both {messages:[]} and {message:"", conversationHistory:[]} formats
+  let messages: ChatMessage[] = [];
+  if (Array.isArray(body.messages) && body.messages.length > 0) {
+    messages = body.messages;
+  } else if (body.message) {
+    const history = Array.isArray(body.conversationHistory) ? body.conversationHistory : [];
+    messages = [...history, { role: "user", content: body.message }];
+  }
+
+  if (messages.length === 0) {
+    res.status(400).json({ error: "messages required" });
+    return;
+  }
+
+  const provider = body.provider ?? "gemini";
+  const systemPrompt = typeof body.systemPrompt === "string" ? body.systemPrompt : "";
+
+  // Helper: collect streamed text
+  const collectGroq = async (): Promise<string> => {
+    let text = "";
+    for await (const chunk of streamGroq(messages, systemPrompt || undefined, body.groqApiKey)) {
+      text += chunk;
+    }
+    return text;
+  };
+
+  try {
+    if (provider === "groq" || provider === "gemma2") {
+      const reply = await collectGroq();
+      res.json({ content: reply });
+      return;
+    }
+
+    // Gemini with auto-fallback to Groq
+    try {
+      const normalized: ChatMessage[] = [];
+      for (const m of messages) {
+        const last = normalized[normalized.length - 1];
+        if (last && last.role === m.role) {
+          last.content = last.content ? `${last.content}\n${m.content}` : m.content;
+        } else {
+          normalized.push({ ...m });
+        }
+      }
+
+      const contents = normalized.map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content || "" }],
+      }));
+
+      const reinforcedSystemPrompt = systemPrompt ? SYSTEM_PROMPT_WRAPPER(systemPrompt) : undefined;
+
+      const stream = await ai.models.generateContentStream({
+        model: "gemini-2.5-flash",
+        contents,
+        config: {
+          systemInstruction: reinforcedSystemPrompt,
+          temperature: 0.95,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT" as any, threshold: "BLOCK_NONE" as any },
+            { category: "HARM_CATEGORY_HATE_SPEECH" as any, threshold: "BLOCK_NONE" as any },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT" as any, threshold: "BLOCK_NONE" as any },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT" as any, threshold: "BLOCK_NONE" as any },
+            { category: "HARM_CATEGORY_CIVIC_INTEGRITY" as any, threshold: "BLOCK_NONE" as any },
+          ],
+        },
+      });
+
+      let fullText = "";
+      for await (const chunk of stream) {
+        if (chunk.text) fullText += chunk.text;
+      }
+      res.json({ content: fullText || "பதில் இல்லை" });
+    } catch (geminiErr) {
+      // Gemini failed — try Groq fallback if key available
+      logger.warn({ geminiErr }, "Gemini failed, trying Groq fallback");
+      if (process.env.GROQ_API_KEY) {
+        const reply = await collectGroq();
+        res.json({ content: reply, provider: "gemma2_fallback" });
+      } else {
+        throw geminiErr;
+      }
+    }
+  } catch (err) {
+    logger.error({ err }, "POST /chat error");
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    res.status(500).json({ error: msg });
+  }
+});
+
 // ── GET /chat/providers → list available providers & status ──────────────────
 router.get("/chat/providers", (_req, res: Response) => {
   const hasGemini = !!(
