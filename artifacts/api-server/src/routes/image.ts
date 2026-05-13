@@ -2077,5 +2077,62 @@ router.post("/image/analyze-body", async (req: Request, res: Response): Promise<
   }
 });
 
+// ── POST /image/download → convert base64 image to downloadable file ─────────
+// Android app-ல் generated image-ஐ Gallery-ல் save செய்ய இந்த endpoint use பண்ணலாம்
+router.post("/image/download", (req: Request, res: Response): void => {
+  const body = req.body as { b64_json?: string; mimeType?: string; filename?: string };
+  const b64 = typeof body.b64_json === "string" ? body.b64_json : null;
+  const mimeType = typeof body.mimeType === "string" ? body.mimeType : "image/jpeg";
+
+  if (!b64) {
+    res.status(400).json({ error: "b64_json required" });
+    return;
+  }
+
+  try {
+    const buffer = Buffer.from(b64, "base64");
+    const ext = mimeType.includes("png") ? "png" : mimeType.includes("webp") ? "webp" : "jpg";
+    const filename = body.filename || `ai_image_${Date.now()}.${ext}`;
+
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Length", buffer.length);
+    res.setHeader("Cache-Control", "no-store");
+    res.send(buffer);
+  } catch (err) {
+    logger.error({ err }, "Image download error");
+    res.status(500).json({ error: "Image convert பண்ண முடியல — base64 data சரியா இருக்கான்னு check பண்ணுங்க." });
+  }
+});
+
+// ── GET /image/download/:jobId → download image from completed job ────────────
+router.get("/image/download/:jobId", (req: Request, res: Response): void => {
+  const job = imageJobs.get(req.params.jobId as string);
+  if (!job) {
+    res.status(404).json({ error: "Job not found or expired" });
+    return;
+  }
+  if (job.status !== "done" || !job.result) {
+    res.status(409).json({ error: "Image still generating — status check பண்ணுங்க", status: job.status });
+    return;
+  }
+
+  try {
+    const { b64_json, mimeType } = job.result as { b64_json: string; mimeType: string };
+    const buffer = Buffer.from(b64_json, "base64");
+    const ext = mimeType.includes("png") ? "png" : mimeType.includes("webp") ? "webp" : "jpg";
+    const filename = `ai_image_${req.params.jobId}.${ext}`;
+
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Length", buffer.length);
+    res.setHeader("Cache-Control", "no-store");
+    res.send(buffer);
+  } catch (err) {
+    logger.error({ err }, "Job image download error");
+    res.status(500).json({ error: "Image download பண்ண முடியல." });
+  }
+});
+
 export default router;
 
